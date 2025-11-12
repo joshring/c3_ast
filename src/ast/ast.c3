@@ -215,117 +215,120 @@ macro String Ast.@allc_str(&self, String s)
 }
 
 fn Ast parse(
-    String contents, String file_path, bool print_lex = false, DynamicArenaAllocator* allc = null
+    String contents, 
+	String file_path, 
+	bool print_lex = false, 
+	DynamicArenaAllocator* allocator = null
 )
 {
-    Ast self;
-    if (allc == null) 
+    Ast ast;
+    if (allocator == null) 
 	{
         // typically this will be actual only for tests
-        self.allocator = mem::alloc(DynamicArenaAllocator);
-        self.allocator.init(allocator: tmem, page_size: 1024);
+        ast.allocator = mem::alloc(DynamicArenaAllocator);
+        ast.allocator.init(allocator: tmem, page_size: 1024);
     } 
 	else 
 	{
-        self.allocator = allc;
+        ast.allocator = allocator;
     }
     assert(file_path, "empty path");
     assert(file_path.ends_with(".c3"), "wrong extension");
-    self.path = self.@allc_str(file_path);
+    ast.path = ast.@allc_str(file_path);
 
-    lexer::init(&self.lexer, contents);
+    lexer::init(&ast.lexer, contents);
     NodeParser node_fn = null;
     AstNode* node = null;
     AstDoc* docstring = null;
-    AstModule* current_module = (AstModule*)self.@allc_add(
-        AstModule, &self.modules, &self.lexer.token
+    AstModule* current_module = (AstModule*)ast.@allc_add(
+        AstModule, &ast.modules, &ast.lexer.token
     );
-    current_module.file_path = self.path;
+    current_module.file_path = ast.path;
 
-    self.state_stack.init(allocator: allc);
-    defer self.state_stack.free();
+    ast.state_stack.init(allocator: allocator);
+    defer ast.state_stack.free();
 
-    while LOOP: (self.lexer.next_token()) 
+    while LOOP: (ast.lexer.next_token()) 
 	{
-        if (print_lex) self.lexer.token.print();
+        if (print_lex) ast.lexer.token.print();
 
         if (!node_fn) 
 		{
-            switch (self.lexer.token.type) 
+            switch (ast.lexer.token.type) 
 			{
                 case MODULE:
                     node_fn = &Ast.parse_module;
-                    if (self.modules.next == null) 
+                    if (ast.modules.next == null) 
 					{
                         // first `module` keyword, check if there is no decls/imports in default
                         // and remove it from modules list if it's completely empty
-                        if (!self.modules.decls && !self.modules.imports) 
+                        if (!ast.modules.decls && !ast.modules.imports) 
 						{
-                            self.modules = null;
+                            ast.modules = null;
                         }
                     }
-                    node = self.@allc_add(AstModule, &self.modules, &self.lexer.token);
+                    node = ast.@allc_add(AstModule, &ast.modules, &ast.lexer.token);
                     current_module = (AstModule*)node;
-                    current_module.src_line = self.lexer.token.row;
+                    current_module.src_line = ast.lexer.token.row;
                     current_module.docs = docstring;
-                    current_module.file_path = self.path;
+                    current_module.file_path = ast.path;
                 case MACRO:
                 case FN:
                     node_fn = &Ast.parse_function;
-                    node = self.@allc_add(AstCallable, &current_module.decls, &self.lexer.token);
+                    node = ast.@allc_add(AstCallable, &current_module.decls, &ast.lexer.token);
                     ((AstCallable*)node).docs = docstring;
                 case IMPORT:
                     node_fn = &Ast.parse_import;
-                    node = self.@allc_add(AstImport, &current_module.imports, &self.lexer.token);
+                    node = ast.@allc_add(AstImport, &current_module.imports, &ast.lexer.token);
                 case DOCS_START:
                     // Global doc strings
                     docstring = null;  // reset all previous docs
                     node_fn = &Ast.parse_docstring;
-                    node = self.@allc_add(AstDoc, &docstring, &self.lexer.token);
+                    node = ast.@allc_add(AstDoc, &docstring, &ast.lexer.token);
                 case ENUM:
                 case FAULT:
                     node_fn = &Ast.parse_enumerable;
-                    node = self.@allc_add(
-                        AstTypeDefEnumerable, &current_module.decls, &self.lexer.token
+                    node = ast.@allc_add(
+                        AstTypeDefEnumerable, &current_module.decls, &ast.lexer.token
                     );
                     ((AstTypeDefEnumerable*)node).docs = docstring;
                 case INTERFACE:
                     node_fn = &Ast.parse_interface;
-                    node = self.@allc_add(
-                        AstTypeDefInterface, &current_module.decls, &self.lexer.token
+                    node = ast.@allc_add(
+                        AstTypeDefInterface, &current_module.decls, &ast.lexer.token
                     );
                     ((AstTypeDefInterface*)node).docs = docstring;
                 case STRUCT:
                 case UNION:
                 case BITSTRUCT:
                     node_fn = &Ast.parse_structural;
-                    node = self.@allc_add(
-                        AstTypeDefStructural, &current_module.decls, &self.lexer.token
+                    node = ast.@allc_add(
+                        AstTypeDefStructural, &current_module.decls, &ast.lexer.token
                     );
                     ((AstTypeDefStructural*)node).docs = docstring;
                 case DEF:
                 case DISTINCT:
                     node_fn = &Ast.parse_typedef;
-                    node = self.@allc_add(AstTypeDef, &current_module.decls, &self.lexer.token);
+                    node = ast.@allc_add(AstTypeDef, &current_module.decls, &ast.lexer.token);
                     ((AstTypeDef*)node).docs = docstring;
                 case CONST:
                     node_fn = &Ast.parse_constants;
-                    node = self.@allc_add(AstTypeDef, &current_module.decls, &self.lexer.token);
+                    node = ast.@allc_add(AstTypeDef, &current_module.decls, &ast.lexer.token);
                     ((AstTypeDef*)node).docs = docstring;
                 case TYPE_IDENT:
                 case TLOCAL:
                     node_fn = &Ast.parse_global_var;
-                    node = self.@allc_add(AstTypeDef, &current_module.decls, &self.lexer.token);
+                    node = ast.@allc_add(AstTypeDef, &current_module.decls, &ast.lexer.token);
                     ((AstTypeDef*)node).docs = docstring;
                 default:
                     continue LOOP;
             }
 
-            assert(self.state_stack.len() == 0);
-            self.state_stack.push((NodeParserState){});
+            assert(ast.state_stack.len() == 0);
+            ast.state_stack.push((NodeParserState){});
         }
 
-        if (node_fn(&self, node, &self.lexer.token, &self.state_stack[0])) 
+        if (node_fn(&ast, node, &ast.lexer.token, &ast.state_stack[0])) 
 		{
             // Node was finished, scan next;
             switch (node.type) 
@@ -333,7 +336,7 @@ fn Ast parse(
                 case MODULE:
                     assert(node == current_module);
                     DString mname = dstring::temp();
-                    node.value = self.@allc_str(self.@node_join(current_module.name, mname, "::"));
+                    node.value = ast.@allc_str(ast.@node_join(current_module.name, mname, "::"));
                     current_module.hash.init();
                     current_module.hash.update(node.value);
                     nextcase default;
@@ -344,17 +347,17 @@ fn Ast parse(
             }
             node_fn = null;
             node = null;
-            assert(self.state_stack.len() == 0, "not cleared?");
+            assert(ast.state_stack.len() == 0, "not cleared?");
         }
     }
 
-    if (self.modules) 
+    if (ast.modules) 
 	{
-        AstModule* last_mod = @node_last(self.modules);
-        last_mod.iend = self.lexer.token.offset - 1;
+        AstModule* last_mod = @node_last(ast.modules);
+        last_mod.iend = ast.lexer.token.offset - 1;
     }
-    self.state_stack.clear();
+    ast.state_stack.clear();
 
-    return self;
+    return ast;
 }
 
