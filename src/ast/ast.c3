@@ -12,7 +12,7 @@ struct Ast
 {
     String path;
     AstModule* modules;
-    allocator::DynamicArenaAllocator* _allocator;
+    allocator::DynamicArenaAllocator* allocator;
     Lexer lexer;
     List{NodeParserState} state_stack;
 }
@@ -157,7 +157,7 @@ macro @node_foreach(#self; @body(item))
 
 macro Ast.@allc_add(&self, $Type, AstNode** collection, lexer::Token* token) 
 {
-    $Type* result = self._allocator.acquire($Type.sizeof, NO_ZERO, $Type.alignof)!!;
+    $Type* result = self.allocator.acquire($Type.sizeof, NO_ZERO, $Type.alignof)!!;
     *result = {
         .type = token.type,
         .istart = token.offset,
@@ -210,7 +210,7 @@ macro Ast.@node_at(self, node, uint index)
 
 macro String Ast.@allc_str(&self, String s) 
 {
-    String result = s.copy(self._allocator);
+    String result = s.copy(self.allocator);
     return result;
 }
 
@@ -222,12 +222,12 @@ fn Ast parse(
     if (allc == null) 
 	{
         // typically this will be actual only for tests
-        self._allocator = mem::alloc(DynamicArenaAllocator);
-        self._allocator.init(allocator: tmem, page_size: 1024);
+        self.allocator = mem::alloc(DynamicArenaAllocator);
+        self.allocator.init(allocator: tmem, page_size: 1024);
     } 
 	else 
 	{
-        self._allocator = allc;
+        self.allocator = allc;
     }
     assert(file_path, "empty path");
     assert(file_path.ends_with(".c3"), "wrong extension");
