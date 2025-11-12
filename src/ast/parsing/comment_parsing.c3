@@ -10,24 +10,30 @@ module ast::lexer;
 fn bool skip_whitespace(Lexer* lexer)
 {
     bool has_empty_line = false;
-    while LOOP: (!reached_end(lexer)) {
+    while LOOP: (!reached_end(lexer)) 
+	{
         char c = peek(lexer);
-        switch (c) {
+        switch (c) 
+		{
             case '/':
                 has_empty_line = false;
                 if (lexer.mode == LEX_CONTRACTS) return false;
                 // The '//' case
-                if (peek_next(lexer) == '/') {
+                if (peek_next(lexer) == '/') 
+				{
                     skip(lexer, 2);
-                    if (parse_line_comment(lexer)) {
+                    if (parse_line_comment(lexer)) 
+					{
                         return true;
                     }
                     continue;
                 }
                 // '/*'
-                if (peek_next(lexer) == '*') {
+                if (peek_next(lexer) == '*') 
+				{
                     skip(lexer, 2);
-                    if (parse_multiline_comment(lexer)) {
+                    if (parse_multiline_comment(lexer)) 
+					{
                         return true;
                     }
                     continue;
@@ -36,7 +42,8 @@ fn bool skip_whitespace(Lexer* lexer)
             case '\n':
                 // Contract lexing sees '\n' as a token.
                 if (lexer.mode == LEX_CONTRACTS) return false;
-                if (has_empty_line) {
+                if (has_empty_line) 
+				{
                     begin_new_token(lexer);
                     return new_token(lexer, TokenType.EMPTY_LINE, "\n");
                 }
@@ -46,7 +53,8 @@ fn bool skip_whitespace(Lexer* lexer)
             case ' ':
             case '\t':
             case '\f':
-                if (lexer.is_whitespace_mode) {
+                if (lexer.is_whitespace_mode) 
+				{
                     begin_new_token(lexer);
                     next(lexer);
                     uint len = (uint)(lexer.current - lexer.lexing_start);
@@ -74,13 +82,16 @@ fn bool parse_line_comment(Lexer* lexer) @inline
     bool has_new_line = (lexer.current == lexer.file_begin);
     begin_new_token(lexer);
 
-    while (!reached_end(lexer) && peek(lexer) != '\n') {
+    while (!reached_end(lexer) && peek(lexer) != '\n') 
+	{
         next(lexer);
     }
 
     char* cur = lexer.lexing_start - 1;
-    while LOOP: (cur >= lexer.file_begin) {
-        switch (*cur) {
+    while LOOP: (cur >= lexer.file_begin) 
+	{
+        switch (*cur) 
+		{
             case ' ':
             case '\t':
                 break;
@@ -113,17 +124,21 @@ fn bool parse_multiline_comment(Lexer* lexer) @inline
     begin_new_token(lexer);
 
     int nesting = 0;
-    while LOOP: (!reached_end(lexer)) {
-        switch (peek(lexer)) {
+    while LOOP: (!reached_end(lexer)) 
+	{
+        switch (peek(lexer)) 
+		{
             case '*':
-                if (peek_next(lexer) == '/') {
+                if (peek_next(lexer) == '/') 
+				{
                     skip(lexer, 2);
                     nesting--;
                     if (nesting == 0) break LOOP;
                     continue;
                 }
             case '/':
-                if (peek_next(lexer) == '*') {
+                if (peek_next(lexer) == '*') 
+				{
                     skip(lexer, 2);
                     nesting++;
                     continue;
@@ -138,8 +153,10 @@ fn bool parse_multiline_comment(Lexer* lexer) @inline
     }
 
     char* cur = lexer.lexing_start - 1;
-    while LOOP: (cur >= lexer.file_begin) {
-        switch (*cur) {
+    while LOOP: (cur >= lexer.file_begin) 
+	{
+        switch (*cur) 
+		{
             case ' ':
             case '\t':
                 break;

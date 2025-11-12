@@ -98,7 +98,8 @@ fn void Lexer.set_whitespace_mode(&self, bool is_enabled)
 *>
 fn bool Lexer.next_token(&self)
 {
-    if (self.token.type == EOF) {
+    if (self.token.type == EOF) 
+	{
         return false;
     }
     // Scan for a token.
@@ -109,7 +110,8 @@ fn bool Lexer.next_token(&self)
     bool token_is_ok = false;
 	
     do {
-        if (!token_is_ok) {
+        if (!token_is_ok) 
+		{
             // Scan to the end of the line if we have an error.
             while (!reached_end(self) && peek(self) != '\n') next(self);
         }
@@ -155,12 +157,14 @@ macro bool reached_end(lexer_)
 // Step one character forward and return that character
 fn char next(Lexer* lexer) @inline
 {
-    if (@unlikely(*lexer.current == '\n')) {
+    if (@unlikely(*lexer.current == '\n')) 
+	{
         lexer.line_start = lexer.current + 1;
         lexer.current_row++;
     }
     lexer.current++;
-    if (@unlikely(lexer.current >= (lexer.file_begin + lexer.file_len))) {
+    if (@unlikely(lexer.current >= (lexer.file_begin + lexer.file_len))) 
+	{
         return '\0';
     }
     return (lexer.current)[0];
@@ -170,7 +174,8 @@ fn char next(Lexer* lexer) @inline
 fn void backtrack(Lexer* lexer) @inline 
 {
     lexer.current--;
-    if (lexer.current[0] == '\n') {
+    if (lexer.current[0] == '\n') 
+	{
         lexer.current_row--;
     }
 }
@@ -179,7 +184,8 @@ fn void backtrack(Lexer* lexer) @inline
 fn void skip(Lexer* lexer, int steps) @inline 
 {
     assert(steps > 0);
-    for (int i = 0; i < steps; i++) {
+    for (int i = 0; i < steps; i++) 
+	{
         next(lexer);
     }
 }
@@ -198,7 +204,8 @@ fn bool match(Lexer* lexer, char expected) @inline
 
 fn bool lexer_scan_token_inner(Lexer* lexer) 
 {
-    if (skip_whitespace(lexer)) {
+    if (skip_whitespace(lexer)) 
+	{
         // Now skip the whitespace (but check for comments).
         return true;
     }
@@ -206,19 +213,22 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
     // Point start to the first non-whitespace character.
     begin_new_token(lexer);
 
-    if (reached_end(lexer)) {
+    if (reached_end(lexer)) 
+	{
         new_token(lexer, EOF, "\n");
         return false;
     }
 
     ichar c = peek(lexer);
     next(lexer);
-    switch (c) {
+    switch (c) 
+	{
         case '\n':
             assert(lexer.mode == LEX_CONTRACTS);
             return new_token(lexer, DOCS_EOL, "\n");
         case '@':
-            if (utils::char_is_letter_(peek(lexer))) {
+            if (utils::char_is_letter_(peek(lexer))) 
+			{
                 return scan_ident(lexer, AT_IDENT, AT_CONST_IDENT, AT_TYPE_IDENT, '@');
             }
             return new_token(lexer, AT, "@");
@@ -231,12 +241,16 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
         case '#':
             return scan_ident(lexer, HASH_IDENT, HASH_CONST_IDENT, HASH_TYPE_IDENT, '#');
         case '$':
-            if (match(lexer, '$')) {
-                if (utils::char_is_letter(peek(lexer))) {
+            if (match(lexer, '$')) 
+			{
+                if (utils::char_is_letter(peek(lexer))) 
+				{
                     return scan_ident(lexer, BUILTIN, BUILTIN, BUILTIN, '#');
                 }
                 return add_error_token_at_current(lexer, "Expected a letter after $$.");
-            } else {
+            } 
+			else 
+			{
                 return scan_ident(lexer, CT_IDENT, CT_CONST_IDENT, CT_TYPE_IDENT, '$');
             }
         case ',':
@@ -257,7 +271,8 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
         case ']':
             return new_token(lexer, RBRACKET, "]");
         case '.':
-            if (match(lexer, '.')) {
+            if (match(lexer, '.')) 
+			{
                 if (match(lexer, '.')) return new_token(lexer, ELLIPSIS, "...");
                 return new_token(lexer, DOTDOT, "..");
             }
@@ -272,7 +287,8 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
         case '/':
             return match(lexer, '=') ? new_token(lexer, DIV_ASSIGN, "/=") : new_token(lexer, DIV, "/");
         case '*':
-            if (lexer.mode == LEX_CONTRACTS && match(lexer, '>')) {
+            if (lexer.mode == LEX_CONTRACTS && match(lexer, '>')) 
+			{
                 lexer.mode = LEX_NORMAL;
                 return new_token(lexer, DOCS_END, "*>");
             }
@@ -283,33 +299,24 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
             return match(lexer, '=') ? new_token(lexer, EQEQ, "==") : new_token(lexer, EQ, "=");
 			
         case '^':
-            return match(
-                lexer, '='
-            ) ? new_token(
-                lexer, BIT_XOR_ASSIGN, "^="
-            ) : new_token(
-                lexer, BIT_XOR, "^"
-            );
+            return match(lexer, '=') ? new_token(lexer, BIT_XOR_ASSIGN, "^=") : new_token(lexer, BIT_XOR, "^");
         case '?':
             if (match(lexer, '?')) return new_token(lexer, QUESTQUEST, "??");
-            return match(
-                lexer, ':'
-            ) ? new_token(
-                lexer, ELVIS, "?:"
-            ) : new_token(
-                lexer, QUESTION, "?"
-            );
+            return match(lexer, ':') ? new_token(lexer, ELVIS, "?:") : new_token(lexer, QUESTION, "?");
         case '<':
-            if (match(lexer, '<')) {
+            if (match(lexer, '<')) 
+			{
                 if (match(lexer, '=')) return new_token(lexer, SHL_ASSIGN, "<<=");
                 return new_token(lexer, SHL, "<<");
             }
-            if (lexer.mode == LEX_NORMAL && match(lexer, '*')) {
+            if (lexer.mode == LEX_NORMAL && match(lexer, '*')) 
+			{
                 return parse_doc_start(lexer);
             }
             return match(lexer, '=') ? new_token(lexer, LESS_EQ, "<=") : new_token(lexer, LESS, "<");
         case '>':
-            if (match(lexer, '>')) {
+            if (match(lexer, '>')) 
+			{
                 if (match(lexer, '=')) return new_token(lexer, SHR_ASSIGN, ">>=");
                 return new_token(lexer, SHR, ">>");
             }
@@ -322,24 +329,21 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
             return match(lexer, '=') ? new_token(lexer, MOD_ASSIGN, "%=") : new_token(lexer, MOD, "%");
 			
         case '&':
-            if (match(lexer, '&')) {
+            if (match(lexer, '&')) 
+			{
                 return match(lexer, '&') ? new_token(lexer, CT_AND, "&&&") : new_token(lexer, AND, "&&");
             }
             return match(lexer, '=') ? new_token(lexer, BIT_AND_ASSIGN, "&=") : new_token(lexer, AMP, "&");
         case '|':
             if (match(lexer, '}')) return new_token(lexer, RBRAPIPE, "|}");
-            if (match(lexer, '|')) {
-                return match(
-                    lexer, '|'
-                ) ? new_token(
-                    lexer, CT_OR, "|||"
-                ) : new_token(
-                    lexer, OR, "||"
-                );
+            if (match(lexer, '|')) 
+			{
+                return match(lexer, '|') ? new_token(lexer, CT_OR, "|||") : new_token(lexer, OR, "||");
             }
             return match(lexer, '=') ? new_token(lexer, BIT_OR_ASSIGN, "|=") : new_token(lexer, BIT_OR, "|");
         case '+':
-            if (match(lexer, '+')) {
+            if (match(lexer, '+')) 
+			{
                 if (match(lexer, '+')) return new_token(lexer, CT_CONCAT, "+++");
                 return new_token(lexer, PLUSPLUS, "++");
             }
@@ -351,7 +355,8 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
             if (match(lexer, '=')) return new_token(lexer, MINUS_ASSIGN, "-=");
             return new_token(lexer, MINUS, "-");
         case 'x':
-            if ((peek(lexer) == '"' || peek(lexer) == '\'' || peek(lexer) == '`')) {
+            if ((peek(lexer) == '"' || peek(lexer) == '\'' || peek(lexer) == '`')) 
+			{
                 return scan_hex_array(lexer);
             }
             // goto IDENT;
@@ -361,7 +366,8 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
                 peek(lexer) == '6' &&
                 peek_next(lexer) == '4' &&
                 (lexer.current[2] == '\'' || lexer.current[2] == '"' || lexer.current[2] == '`')
-            ) {
+            ) 
+			{
                 return scan_base64(lexer);
             }
             // goto IDENT;
@@ -371,13 +377,15 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
             backtrack(lexer);
             return scan_ident(lexer, IDENT, CONST_IDENT, TYPE_IDENT, 0);
         default:
-            if (c >= '0' && c <= '9') {
+            if (c >= '0' && c <= '9') 
+			{
                 backtrack(lexer);
                 return scan_digit(lexer);
             }
             if (c >= 'a' && c <= 'z') nextcase '_';  // goto IDENT;
             if (c >= 'A' && c <= 'Z') nextcase '_';  // goto IDENT;
-            if (c < 0) {
+            if (c < 0) 
+			{
                 return add_error_token(
                     lexer,
                     "The 0x ?? character may not be placed outside of a string or comment, did you forget a \" somewhere?"
@@ -503,7 +511,8 @@ macro bool add_error_token_at_current(Lexer* lexer, String message)
 
 fn TokenType token_from_identifier(String indentifier)
 {
-    switch (indentifier) {
+    switch (indentifier) 
+	{
         case "asm":
             return ASM;
         case "bitstruct":

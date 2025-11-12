@@ -208,7 +208,8 @@ fn int char_hex_to_nibble(char c)
 
 fn bool char_is_hex(char c)
 {
-    switch (c) {
+    switch (c) 
+	{
 		case '0'..'9':
 		case 'a'..'f':
 		case 'A'..'F':
@@ -220,7 +221,8 @@ fn bool char_is_hex(char c)
 
 fn bool char_is_hex_or_(char c)
 {
-    switch (c) {
+    switch (c) 
+	{
 		case '0'..'9':
 		case 'a'..'f':
 		case 'A'..'F':
@@ -237,7 +239,8 @@ fn bool char_is_hex_or_(char c)
 *>
 fn ichar char_is_valid_escape(char c)
 {
-    switch (c) {
+    switch (c) 
+	{
         case 'a':
             return '\a';
         case 'b':
@@ -302,7 +305,8 @@ fn bool is_space(char c)
 
 fn bool char_is_whitespace(char c)
 {
-    switch (c) {
+    switch (c) 
+	{
         case ' ':
         case '\t':
         case '\n':

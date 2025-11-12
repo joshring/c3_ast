@@ -19,10 +19,12 @@ fn void Lexer.extend_current_attribute(Lexer* lexer)
     int nesting = 0;
     int extra_len = 0;
     bool had_nesting = false;
-    while LOOP: (!reached_end(lexer)) {
+    while LOOP: (!reached_end(lexer)) 
+	{
         char c = peek(lexer);
         // io::printf("current char: `%c`\n", c);
-        switch (c) {
+        switch (c) 
+		{
             case '(':
                 nesting++;
                 had_nesting = true;
@@ -33,8 +35,10 @@ fn void Lexer.extend_current_attribute(Lexer* lexer)
             case ' ':
                 break;
             default:
-                if (nesting <= 0) {
-                    if (had_nesting) {
+                if (nesting <= 0) 
+				{
+                    if (had_nesting) 
+					{
                         result.value = (String)(
                             (char*)result.value.ptr
                         )[..result.value.len + extra_len];
@@ -56,16 +60,22 @@ fn bool scan_ident(
 {
     TokenType type = INVALID_TOKEN;
     char c;
-    while ((c = peek(lexer)) == '_') {
+    while ((c = peek(lexer)) == '_') 
+	{
         next(lexer);
     }
-    while LOOP: (1) {
+    while LOOP: (1) 
+	{
         c = peek(lexer);
-        switch (c) {
+        switch (c) 
+		{
             case 'a'..'z':
-                if (type == INVALID_TOKEN) {
+                if (type == INVALID_TOKEN) 
+				{
                     type = normal;
-                } else if (type == const_token) {
+                } 
+				else if (type == const_token) 
+				{
                     type = type_token;
                 }
                 break;
@@ -83,14 +93,17 @@ fn bool scan_ident(
     }
 
     uint len = (uint)(lexer.current - lexer.lexing_start);
-    if (type == INVALID_TOKEN) {
+    if (type == INVALID_TOKEN) 
+	{
         if (!prefix && len == 1) return new_token(lexer, UNDERSCORE, "_");
-        if (prefix && len == 1) {
+        if (prefix && len == 1) 
+		{
             return add_error_token(lexer, "An identifier was expected ... ");
         }
         return add_error_token(lexer, "An identifier may not consist of only '_' characters.");
     }
-    switch (type) {
+    switch (type) 
+	{
         case RETURN:
             if (lexer.mode == LEX_CONTRACTS) type = IDENT;
             break;
@@ -99,7 +112,8 @@ fn bool scan_ident(
     }
     String identifier = (String)lexer.lexing_start[..len - 1];
     TokenType ttype = lexer::token_from_identifier(identifier);
-    if (ttype != INVALID_TOKEN) {
+    if (ttype != INVALID_TOKEN) 
+	{
         type = ttype;
     }
     return new_token(lexer, type, identifier);

@@ -217,7 +217,8 @@ macro parse_callable_params(Ast* ast, Token* t, AstCallable* node_func, NodePars
                 current_param.type = TokenType.VAR;
                 state.sub_node = current_param;
             } 
-			else {
+			else 
+			{
                 nextcase default;
             }
         case RPAREN:
@@ -227,7 +228,8 @@ macro parse_callable_params(Ast* ast, Token* t, AstCallable* node_func, NodePars
                 state.sub_node = null;
                 state.transition(AT_IDENT);
             } 
-			else {
+			else 
+			{
                 nextcase default;
             }
         case IMPLIES:  // =>
@@ -273,7 +275,8 @@ macro parse_callable_params(Ast* ast, Token* t, AstCallable* node_func, NodePars
                 }
                 current_param.value = ast.@allc_str(t.value);
             } 
-			else {
+			else 
+			{
                 nextcase default;
             }
         case AT_IDENT:
@@ -284,7 +287,8 @@ macro parse_callable_params(Ast* ast, Token* t, AstCallable* node_func, NodePars
                     ast.lexer.extend_current_attribute();
                     ast.@allc_add(AstNode, &current_param.attributes, t);
                 } 
-				else {
+				else 
+				{
                     // macro @for_each(list; @body(it))
                     current_param.value = ast.@allc_str(t.value);
                 }
@@ -342,7 +346,8 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
 					{
                         nextcase STATE: state.transition(IDENT);
                     } 
-					else {
+					else 
+					{
                         nextcase default;
                     }
                 default:
@@ -463,7 +468,8 @@ fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* stat
                             ast.@allc_add(AstNode, &contract.items, &ast.lexer.token);
                         }
                     } 
-					else {
+					else 
+					{
                         ast.@allc_add(AstNode, &contract.items, &ast.lexer.token);
                     }
                     break;

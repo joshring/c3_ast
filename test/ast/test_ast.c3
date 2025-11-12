@@ -176,7 +176,8 @@ fn void test_scope_oveflow_protection()
 
     TokenType t = TokenType.LBRACE;
 
-    for (uint i = 0; i < state.scope_stack.len * 2; i++) {
+    for (uint i = 0; i < state.scope_stack.len * 2; i++) 
+	{
         state.check_scope(t);
     }
 

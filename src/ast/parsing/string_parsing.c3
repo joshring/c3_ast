@@ -6,23 +6,27 @@ module ast::lexer;
 fn bool scan_char(Lexer* lexer) @inline 
 {
     // Handle the problem with zero size character literal first.
-    if (match(lexer, '\'')) {
+    if (match(lexer, '\'')) 
+	{
         return add_error_token(lexer, "The character literal was empty.");
     }
 
     int width = 1;
     char c;
 
-    while LOOP: (!match(lexer, '\'')) {
+    while LOOP: (!match(lexer, '\'')) 
+	{
         c = peek(lexer);
         next(lexer);
         // End of file may occur:
-        switch (c) {
+        switch (c) 
+		{
             case '\0':
                 return add_error_token_at_start(lexer, "The character literal did not terminate.");
             case '\\':  // escape sequence
                 c = peek(lexer);
-                if (c == '\'' || c == '\\') {
+                if (c == '\'' || c == '\\') 
+				{
                     next(lexer);
                     width++;
                 }
@@ -35,7 +39,8 @@ fn bool scan_char(Lexer* lexer) @inline
 fn void consume_to_end_quote(Lexer* lexer) @inline 
 {
     char c;
-    while ((c = peek(lexer)) != '\0' && c != '"') {
+    while ((c = peek(lexer)) != '\0' && c != '"') 
+	{
         next(lexer);
     }
 }
@@ -44,12 +49,15 @@ fn bool scan_string(Lexer* lexer) @inline
 {
     char c = 0;
     char* current = lexer.current;
-    while ((c = *(current++)) != '"') {
-        if (c == '\n' || c == '\0') {
+    while ((c = *(current++)) != '"') 
+	{
+        if (c == '\n' || c == '\0') 
+		{
             current++;
             break;
         }
-        if (c == '\\') {
+        if (c == '\\') 
+		{
             c = *current;
             if (c != '\n' && c != '\0') current++;
             continue;
@@ -61,10 +69,12 @@ fn bool scan_string(Lexer* lexer) @inline
     // NOTE: inlcuding previous "
     backtrack(lexer);
     begin_new_token(lexer);
-    while (lexer.current < end) {
+    while (lexer.current < end) 
+	{
         c = peek(lexer);
         next(lexer);
-        if (c == '\0' || (c == '\\' && peek(lexer) == '\0')) {
+        if (c == '\0' || (c == '\\' && peek(lexer) == '\0')) 
+		{
             if (c == '\0') backtrack(lexer);
             add_error_token_at_start(
                 lexer,
@@ -73,7 +83,8 @@ fn bool scan_string(Lexer* lexer) @inline
             consume_to_end_quote(lexer);
             return false;
         }
-        if (c == '\n' || (c == '\\' && peek(lexer) == '\n')) {
+        if (c == '\n' || (c == '\\' && peek(lexer) == '\n')) 
+		{
 
             backtrack(lexer);
             add_error_token_at_start(
@@ -94,11 +105,13 @@ fn bool scan_string(Lexer* lexer) @inline
 fn bool scan_raw_string(Lexer* lexer) @inline 
 {
     char c;
-    while (1) {
+    while (1) 
+	{
         c = peek(lexer);
         next(lexer);
         if (c == '`' && peek(lexer) != '`') break;
-        if (c == '\0') {
+        if (c == '\0') 
+		{
             return add_error_token_at_start(
                 lexer,
                 "Reached the end of the file looking for ""the end of the raw string that starts ""here. Did you forget a '`' somewhere?"

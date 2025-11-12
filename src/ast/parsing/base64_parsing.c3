@@ -12,24 +12,30 @@ fn bool scan_base64(Lexer* lexer) @inline
     char c;
     uint end_len = 0;
     ulong len = 4;
-    while (1) {
+    while (1) 
+	{
         c = peek(lexer);
-        if (c == 0) {
+        if (c == 0) 
+		{
             return add_error_token_at_start(
                 lexer, "The base64 string seems to be missing a terminating"
             );
         }
         next(lexer);
         if (c == start_char) break;
-        if (utils::char_is_base64(c)) {
-            if (end_len) {
+        if (utils::char_is_base64(c)) 
+		{
+            if (end_len) 
+			{
                 return add_error_token_at_current(lexer, "can't be placed after an ending '='");
             }
             len++;
             continue;
         }
-        if (c == '=') {
-            if (end_len > 1) {
+        if (c == '=') 
+		{
+            if (end_len > 1) 
+			{
                 return add_error_token_at_current(
                     lexer, "There cannot be more than 2 '=' at the end of a base64 string."
                 );
@@ -37,8 +43,10 @@ fn bool scan_base64(Lexer* lexer) @inline
             end_len++;
             continue;
         }
-        if (!utils::char_is_whitespace(c)) {
-            if (c < ' ' || c > 127) {
+        if (!utils::char_is_whitespace(c)) 
+		{
+            if (c < ' ' || c > 127) 
+			{
                 return add_error_token_at_current(
                     lexer, "A valid base64 character was expected here."
                 );

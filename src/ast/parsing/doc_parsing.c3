@@ -12,9 +12,11 @@ fn bool parse_doc_start(Lexer* lexer)
     bool may_have_contract = true;
     bool has_new_line = false;
     // Let's loop until we find the end or the contract.
-    while LOOP: (!reached_end(lexer)) {
+    while LOOP: (!reached_end(lexer)) 
+	{
         char c = peek(lexer);
-        switch (c) {
+        switch (c) 
+		{
             case '\n':
                 may_have_contract = true;
                 has_new_line = true;
@@ -32,7 +34,8 @@ fn bool parse_doc_start(Lexer* lexer)
                 next(lexer);
                 continue;
             case '@':
-                if (may_have_contract && utils::char_is_lower(peek_next(lexer))) {
+                if (may_have_contract && utils::char_is_lower(peek_next(lexer))) 
+				{
                     // Found a contract
                     // goto EXIT;
                     break LOOP;
@@ -51,9 +54,12 @@ fn bool parse_doc_start(Lexer* lexer)
     // 3. "<* foo <eof>"
     //
     // In any case we can consider this having reached "the contracts"
-    if (has_new_line) {
-        while LOOP: (lexer.current - 1 > lexer.lexing_start) {
-            switch (*(lexer.current - 1)) {
+    if (has_new_line) 
+	{
+        while LOOP: (lexer.current - 1 > lexer.lexing_start) 
+		{
+            switch (*(lexer.current - 1)) 
+			{
                 case ' ':
                 case '\t':
                     lexer.current--;

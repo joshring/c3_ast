@@ -122,7 +122,8 @@ macro @node_last(self)
 {
     assert(self != null);
     $typeof(self) node = self;
-    while (node.next) {
+    while (node.next) 
+	{
         node = ($typeof(self))node.next;
     }
     return node;
@@ -132,9 +133,12 @@ macro AstNode* @node_add(AstNode** self, AstNode* new)
 {
     assert(self != null);
 
-    if (*self == null) {
+    if (*self == null) 
+	{
         *self = new;
-    } else {
+    } 
+	else 
+	{
         AstNode* node = @node_last(*self);
         node.next = new;
     }
@@ -144,7 +148,8 @@ macro AstNode* @node_add(AstNode** self, AstNode* new)
 macro @node_foreach(#self; @body(item))
 {
     var node = #self;
-    while (node) {
+    while (node) 
+	{
         @body(node);
         node = ($typeof(#self))node.next;
     }
@@ -166,10 +171,12 @@ macro Ast.@node_join(self, node, DString out_str, String sep = ",")
 {
     out_str.clear();
     $typeof(node) _node = node;
-    while (_node) {
+    while (_node) 
+	{
         out_str.append(_node.value);
         _node = ($typeof(node))_node.next;
-        if (_node) {
+        if (_node) 
+		{
             out_str.append(sep);
         }
     }
@@ -180,7 +187,8 @@ macro uint Ast.@node_len(self, node)
 {
     uint len = 0;
     $typeof(node) _node = node;
-    while (_node) {
+    while (_node) 
+	{
         len++;
         _node = ($typeof(node))_node.next;
     }
@@ -191,7 +199,8 @@ macro Ast.@node_at(self, node, uint index)
 {
     uint len = 0;
     $typeof(node) _node = node;
-    while (_node) {
+    while (_node) 
+	{
         if (len == index) return _node;
         len++;
         _node = ($typeof(node))_node.next;
@@ -210,11 +219,14 @@ fn Ast parse(
 )
 {
     Ast self;
-    if (allc == null) {
+    if (allc == null) 
+	{
         // typically this will be actual only for tests
         self._allocator = mem::alloc(DynamicArenaAllocator);
         self._allocator.init(allocator: tmem, page_size: 1024);
-    } else {
+    } 
+	else 
+	{
         self._allocator = allc;
     }
     assert(file_path, "empty path");
@@ -233,17 +245,22 @@ fn Ast parse(
     self.state_stack.init(allocator: allc);
     defer self.state_stack.free();
 
-    while LOOP: (self.lexer.next_token()) {
+    while LOOP: (self.lexer.next_token()) 
+	{
         if (print_lex) self.lexer.token.print();
 
-        if (!node_fn) {
-            switch (self.lexer.token.type) {
+        if (!node_fn) 
+		{
+            switch (self.lexer.token.type) 
+			{
                 case MODULE:
                     node_fn = &Ast.parse_module;
-                    if (self.modules.next == null) {
+                    if (self.modules.next == null) 
+					{
                         // first `module` keyword, check if there is no decls/imports in default
                         // and remove it from modules list if it's completely empty
-                        if (!self.modules.decls && !self.modules.imports) {
+                        if (!self.modules.decls && !self.modules.imports) 
+						{
                             self.modules = null;
                         }
                     }
@@ -308,9 +325,11 @@ fn Ast parse(
             self.state_stack.push((NodeParserState){});
         }
 
-        if (node_fn(&self, node, &self.lexer.token, &self.state_stack[0])) {
+        if (node_fn(&self, node, &self.lexer.token, &self.state_stack[0])) 
+		{
             // Node was finished, scan next;
-            switch (node.type) {
+            switch (node.type) 
+			{
                 case MODULE:
                     assert(node == current_module);
                     DString mname = dstring::temp();
@@ -329,7 +348,8 @@ fn Ast parse(
         }
     }
 
-    if (self.modules) {
+    if (self.modules) 
+	{
         AstModule* last_mod = @node_last(self.modules);
         last_mod.iend = self.lexer.token.offset - 1;
     }

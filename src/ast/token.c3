@@ -280,7 +280,8 @@ fn void Token.print(&self, bool new_line = false, int padding = 0)
     assert(padding >= 0);
 
     usz plen = 0;
-    switch (self.type) {
+    switch (self.type) 
+	{
         case IDENT:
         case CT_IDENT:
         case CT_CONST_IDENT:
@@ -346,7 +347,8 @@ fn void Token.print(&self, bool new_line = false, int padding = 0)
 
 fn String token_type_to_string(TokenType type)
 {
-    switch (type) {
+    switch (type) 
+	{
         case INVALID_TOKEN:
             return "INVALID_TOKEN";
 
