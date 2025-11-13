@@ -1,9 +1,39 @@
 module c3_ast;
 import std::io;
 
+import ast;
+ 
+
+
 fn int main(String[] args)
 {
-	io::printn("Hello, World!");
+	
+	// AstNode ast_node;
+	
+	// io::printfn("ast_node.alignof: %s AstNode.sizeof: %s", AstNode.alignof, AstNode.sizeof);
+	// $echo(AstNode.membersof);
+	
+	utils::struct_memory_layout(Token);
+	
+	utils::struct_memory_layout(Lexer);
+	
+	// utils::struct_memory_layout(AstTypeDefStructural);
+	
+	// utils::struct_memory_layout(AstCallable);
+	
+	// utils::struct_memory_layout(AstCallableParam);
+	
+	// utils::struct_memory_layout(AstImport);
+	
+	// utils::struct_memory_layout(AstDoc);
+	
+	// utils::struct_memory_layout(AstDocContract);
+
+	
+	// $foreach $index, $type_member : AstNode.membersof:
+	// 	io::printfn("index: %s typename: %s size: %s alignment %s",$index, $type_member.nameof, $type_member.sizeof, $type_member.alignof);
+	// $endforeach
+	
 	return 0;
 }
 

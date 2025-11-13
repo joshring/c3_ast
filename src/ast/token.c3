@@ -239,8 +239,8 @@ enum TokenType : uint
 
 struct Token (Printable)
 {
-    TokenType type;
     String value;
+    TokenType type;
     uint row;
     uint col;
     uint offset;

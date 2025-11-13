@@ -3,7 +3,7 @@ module ast::utils;
 // Copyright (c) 2025 Alex Veden <i@alexveden.com>. All rights reserved.
 // Use of this source code is governed by the MIT license
 // a copy of which can be found in the LICENSE_STDLIB file.
-
+import std::io;
 
 fn bool char_is_letter(char c)
 {
@@ -316,4 +316,24 @@ fn bool char_is_whitespace(char c)
         default:
             return false;
     }
+}
+
+
+<*
+ Print struct memory layout to optimise memory usage
+ aim to arrange struct members largest to smallest
+ @param $Type : `input type`
+*>
+macro struct_memory_layout($Type)
+{
+	io::printn("===================================================================");
+	io::printfn("%s", $Type.nameof);
+	io::printn("-------------------------------------------------------------------");
+	io::printfn("%s.sizeof: %4s  %s.alignof: %3s", $Type.nameof, $Type.sizeof, $Type.nameof, $Type.alignof);
+	io::printn("-------------------------------------------------------------------");
+	$foreach $index, $type_member : $Type.membersof:
+		// io::printfn("type: %s", $type_member.nameof);
+		io::printfn("index: %3s  typename: %15s  size: %4s  alignment %3s",$index, $type_member.nameof, $type_member.sizeof, $type_member.alignof);
+	$endforeach
+	io::printn("===================================================================");
 }

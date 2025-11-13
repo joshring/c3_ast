@@ -10,45 +10,45 @@ import std::collections::map;
 
 struct Ast
 {
+    Lexer lexer;
+    List{NodeParserState} state_stack;
     String path;
     AstModule* modules;
     allocator::DynamicArenaAllocator* allocator;
-    Lexer lexer;
-    List{NodeParserState} state_stack;
 }
 
 alias NodeParser = fn bool (Ast* ast, AstNode* node, Token* t, NodeParserState* state);
 
 struct NodeParserState
 {
+    TokenType[32] scope_stack;
+    AstNode* sub_node;
     TokenType current_state;
     TokenType last_token;
     TokenType current_token;
     TokenType initial_token;
-    AstNode* sub_node;
     uint scope_depth;
-    TokenType[32] scope_stack;
 }
 
 struct AstNode
 {
+    String value;
+    AstNode* next;
     TokenType type;
     uint istart;
     uint iend;
-    AstNode* next;
-    String value;
 }
 
 struct AstModule
 {
     inline AstNode node;
-    Fnv32a hash;
+    String file_path;
     AstNode* name;
     AstNode* attributes;
     AstImport* imports;
     AstTypeDef* decls;
     AstDoc* docs;
-    String file_path;
+    Fnv32a hash;
     uint src_line;
 }
 

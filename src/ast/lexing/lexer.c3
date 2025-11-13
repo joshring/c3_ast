@@ -22,16 +22,16 @@ const int MAX_SOURCE_LOCATION_LEN = 255;
 
 struct Lexer
 {
+    Token token;
     char* file_begin;
-    uint file_len;
     char* lexing_start;
     char* current;
-    uint current_row;
-    uint start_row;
     char* line_start;
     char* start_row_start;
+    uint file_len;
+    uint current_row;
+    uint start_row;
     LexMode mode;
-    Token token;
     bool is_whitespace_mode;
 }
 
