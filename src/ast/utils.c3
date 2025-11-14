@@ -326,14 +326,14 @@ fn bool char_is_whitespace(char c)
 *>
 macro struct_memory_layout($Type)
 {
-	io::printn("===================================================================");
+	io::printn("======================================================================================================");
 	io::printfn("%s", $Type.nameof);
-	io::printn("-------------------------------------------------------------------");
-	io::printfn("%s.sizeof: %4s  %s.alignof: %3s", $Type.nameof, $Type.sizeof, $Type.nameof, $Type.alignof);
-	io::printn("-------------------------------------------------------------------");
+	io::printn("------------------------------------------------------------------------------------------------------");
+	io::printfn("sizeof: %4s  alignof: %3s", $Type.sizeof, $Type.alignof);
+	io::printn("------------------------------------------------------------------------------------------------------");
 	$foreach $index, $type_member : $Type.membersof:
-		// io::printfn("type: %s", $type_member.nameof);
-		io::printfn("index: %3s  typename: %15s  size: %4s  alignment %3s",$index, $type_member.nameof, $type_member.sizeof, $type_member.alignof);
+		io::printfn("%3s type: %-20s name: %-20s sizeof: %4s  offsetof: %4s  alignof: %4s",
+			$index, $type_member.type.nameof, $type_member.nameof, $type_member.sizeof, $type_member.offsetof, $type_member.alignof);
 	$endforeach
-	io::printn("===================================================================");
+	io::printn("======================================================================================================");
 }

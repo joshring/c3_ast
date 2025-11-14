@@ -13,6 +13,8 @@
 	
 	{| and |} were removed
 	
+	List(<MyType>) became List{MyType}
+	
 	read more here: https://github.com/c3lang/c3c/blob/master/releasenotes.md
 ```
 
