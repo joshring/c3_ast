@@ -167,21 +167,51 @@ macro Ast.@allc_add(&self, $Type, AstNode** collection, lexer::Token* token)
     return @node_add(collection, result);
 }
 
-macro Ast.@node_join(self, node, DString out_str, String sep = ",")
+
+
+<*
+ output string of ast node tree
+ my version of Ast.@node_join
+ TODO: change out_str to be a return value?
+*>
+macro to_string(linked_list, DString out_str, String sep = ",")
 {
+	var $InputType = $typeof(linked_list);
+	
     out_str.clear();
-    $typeof(node) _node = node;
-    while (_node) 
+    $InputType search_node = linked_list;
+	
+    while (search_node != null) 
 	{
-        out_str.append(_node.value);
-        _node = ($typeof(node))_node.next;
-        if (_node) 
+        out_str.append(search_node.value);
+        search_node = ($InputType)search_node.next;
+        if (search_node) 
 		{
             out_str.append(sep);
         }
     }
     return out_str.str_view();
 }
+
+// <*
+//  DEPRECATED: use ast::to_string
+//  output string of ast node tree
+// *>
+// macro Ast.@node_join(self, node, DString out_str, String sep = ",")
+// {
+//     out_str.clear();
+//     $typeof(node) _node = node;
+//     while (_node) 
+// 	{
+//         out_str.append(_node.value);
+//         _node = ($typeof(node))_node.next;
+//         if (_node) 
+// 		{
+//             out_str.append(sep);
+//         }
+//     }
+//     return out_str.str_view();
+// }
 
 // <*
 //  DEPRECATED: use ast::len
@@ -392,7 +422,7 @@ fn Ast parse(
                 case MODULE:
                     assert(node == current_module);
                     DString mname = dstring::temp();
-                    node.value = ast.@allc_str(ast.@node_join(current_module.name, mname, "::"));
+                    node.value = ast.@allc_str(to_string(current_module.name, mname, "::"));
                     current_module.hash.init();
                     current_module.hash.update(node.value);
                     nextcase default;

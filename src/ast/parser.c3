@@ -366,7 +366,7 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
                     if (state.scope_depth == 1) 
 					{
                         DString fname = dstring::temp();
-                        node_func.value = ast.@allc_str(ast.@node_join(node_func.name, fname, "."));
+                        node_func.value = ast.@allc_str(to_string(node_func.name, fname, "."));
                         nextcase STATE: state.transition(VAR);
                     }
                 default:
