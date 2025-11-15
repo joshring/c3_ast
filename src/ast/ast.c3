@@ -24,7 +24,7 @@ fn Ast parse(
     NodeParser node_fn = null;
     AstNode* node = null;
     AstDoc* docstring = null;
-    AstModule* current_module = (AstModule*)ast.@allc_add(
+    AstModule* current_module = (AstModule*)node::append_alloc(
         AstModule, &ast.modules, &ast.lexer.token
     );
     current_module.file_path = ast.path;
@@ -51,7 +51,7 @@ fn Ast parse(
                             ast.modules = null;
                         }
                     }
-                    node = ast.@allc_add(AstModule, &ast.modules, &ast.lexer.token);
+                    node = node::append_alloc(AstModule, &ast.modules, &ast.lexer.token);
                     current_module = (AstModule*)node;
                     current_module.src_line = ast.lexer.token.row;
                     current_module.docs = docstring;
@@ -59,26 +59,26 @@ fn Ast parse(
                 case MACRO:
                 case FN:
                     node_fn = &Ast.parse_function;
-                    node = ast.@allc_add(AstCallable, &current_module.decls, &ast.lexer.token);
+                    node = node::append_alloc(AstCallable, &current_module.decls, &ast.lexer.token);
                     ((AstCallable*)node).docs = docstring;
                 case IMPORT:
                     node_fn = &Ast.parse_import;
-                    node = ast.@allc_add(AstImport, &current_module.imports, &ast.lexer.token);
+                    node = node::append_alloc(AstImport, &current_module.imports, &ast.lexer.token);
                 case DOCS_START:
                     // Global doc strings
                     docstring = null;  // reset all previous docs
                     node_fn = &Ast.parse_docstring;
-                    node = ast.@allc_add(AstDoc, &docstring, &ast.lexer.token);
+                    node = node::append_alloc(AstDoc, &docstring, &ast.lexer.token);
                 case ENUM:
                 case FAULT:
                     node_fn = &Ast.parse_enumerable;
-                    node = ast.@allc_add(
+                    node = node::append_alloc(
                         AstTypeDefEnumerable, &current_module.decls, &ast.lexer.token
                     );
                     ((AstTypeDefEnumerable*)node).docs = docstring;
                 case INTERFACE:
                     node_fn = &Ast.parse_interface;
-                    node = ast.@allc_add(
+                    node = node::append_alloc(
                         AstTypeDefInterface, &current_module.decls, &ast.lexer.token
                     );
                     ((AstTypeDefInterface*)node).docs = docstring;
@@ -86,23 +86,23 @@ fn Ast parse(
                 case UNION:
                 case BITSTRUCT:
                     node_fn = &Ast.parse_structural;
-                    node = ast.@allc_add(
+                    node = node::append_alloc(
                         AstTypeDefStructural, &current_module.decls, &ast.lexer.token
                     );
                     ((AstTypeDefStructural*)node).docs = docstring;
                 case DEF:
                 case DISTINCT:
                     node_fn = &Ast.parse_typedef;
-                    node = ast.@allc_add(AstTypeDef, &current_module.decls, &ast.lexer.token);
+                    node = node::append_alloc(AstTypeDef, &current_module.decls, &ast.lexer.token);
                     ((AstTypeDef*)node).docs = docstring;
                 case CONST:
                     node_fn = &Ast.parse_constants;
-                    node = ast.@allc_add(AstTypeDef, &current_module.decls, &ast.lexer.token);
+                    node = node::append_alloc(AstTypeDef, &current_module.decls, &ast.lexer.token);
                     ((AstTypeDef*)node).docs = docstring;
                 case TYPE_IDENT:
                 case TLOCAL:
                     node_fn = &Ast.parse_global_var;
-                    node = ast.@allc_add(AstTypeDef, &current_module.decls, &ast.lexer.token);
+                    node = node::append_alloc(AstTypeDef, &current_module.decls, &ast.lexer.token);
                     ((AstTypeDef*)node).docs = docstring;
                 default:
                     continue LOOP;
@@ -305,25 +305,6 @@ macro @node_foreach(#self; @body(item))
 
 
 macro append_alloc(
-	$Type, 
-	AstNode** collection, 
-	lexer::Token* token,
-) 
-{
-	
-    $Type* result = mem::tnew($Type);
-    *result = {
-        .type = token.type,
-        .istart = token.offset,
-        .iend = token.offset + token.value.len,
-        .value = token.value.tcopy(),
-    };
-    return append(collection, result);
-}
-
-
-macro Ast.@allc_add(
-	&self,
 	$Type, 
 	AstNode** collection, 
 	lexer::Token* token,
