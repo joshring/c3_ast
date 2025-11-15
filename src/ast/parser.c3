@@ -1,5 +1,7 @@
 module ast;
 
+import ast::node;
+
 import std::io;
 import ast::lexer;
 
@@ -137,7 +139,7 @@ fn bool Ast.parse_module(&ast, AstNode* node, Token* t, NodeParserState* state)
 fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
     assert(node.type == IMPORT);
-    AstImport* imp = (AstImport*)ast::@node_last(node);
+    AstImport* imp = (AstImport*)node::last(node);
 
     switch STATE: (state.check(t)) 
 	{
@@ -366,7 +368,7 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
                     if (state.scope_depth == 1) 
 					{
                         DString fname = dstring::temp();
-                        node_func.value = ast.@allc_str(to_string(node_func.name, fname, "."));
+                        node_func.value = ast.@allc_str(node::to_string(node_func.name, fname, "."));
                         nextcase STATE: state.transition(VAR);
                     }
                 default:
