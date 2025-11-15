@@ -174,12 +174,12 @@ macro Ast.@allc_add(&self, $Type, AstNode** collection, lexer::Token* token)
  my version of Ast.@node_join
  TODO: change out_str to be a return value?
 *>
-macro to_string(linked_list, DString out_str, String sep = ",")
+macro to_string(node_tree, DString out_str, String sep = ",")
 {
-	var $InputType = $typeof(linked_list);
+	var $InputType = $typeof(node_tree);
 	
     out_str.clear();
-    $InputType search_node = linked_list;
+    $InputType search_node = node_tree;
 	
     while (search_node != null) 
 	{
@@ -230,15 +230,15 @@ macro to_string(linked_list, DString out_str, String sep = ",")
 // }
 
 <*
+ iterate to the end of the node tree (linked list) recording its length
  my version of Ast.@node_len
- iterate to the end of the linked list recording its length
 *>
-macro uint len(linked_list)
+macro uint len(node_tree)
 {
-	var $InputType = $typeof(linked_list);
+	var $InputType = $typeof(node_tree);
 	
     uint len = 0;
-    $InputType search_node = linked_list;
+    $InputType search_node = node_tree;
 	
     while (search_node != null) 
 	{
@@ -271,18 +271,17 @@ macro uint len(linked_list)
 // }
 
 <*
- my version of Ast.@node_at
-
  return the node of a given type at a given index
- traverses linked list until next==null
+ traverses node tree (linked list) until next==null
 
+ my version of Ast.@node_at
 *>
-macro index(linked_list, uint index)
+macro index(node_tree, uint index)
 {
-	var $InputType = $typeof(linked_list);
+	var $InputType = $typeof(node_tree);
 	
     uint len = 0;
-    $InputType search_node = linked_list;
+    $InputType search_node = node_tree;
 	
     while (search_node != null) 
 	{
