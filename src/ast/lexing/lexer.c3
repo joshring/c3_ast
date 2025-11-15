@@ -112,7 +112,7 @@ fn bool Lexer.next_token(&self)
     do {
         if (!token_is_ok) 
 		{
-            // Scan to the end of the line if we have an error.
+            // Scan to the end of the line if we have an error
             while (!reached_end(self) && peek(self) != '\n') next(self);
         }
         token_is_ok = lexer_scan_token_inner(self);
@@ -124,11 +124,11 @@ fn bool Lexer.next_token(&self)
 }
 
 //===========================================
-// 	Lexing general methods.
+// 	Lexing general functions
 //===========================================
 
 <*
- Peek at the current character in the buffer.
+ Peek at the current character in the buffer (without consuming it)
 *>
 macro char peek(lexer) 
 {
@@ -136,7 +136,7 @@ macro char peek(lexer)
 }
 
 <*
- Look at the prev character in the buffer.
+ Look at the prev character in the buffer
 *>
 macro char prev(lexer) 
 {
@@ -144,7 +144,7 @@ macro char prev(lexer)
 }
 
 <* 
- Peek one character ahead.
+ Peek one character ahead (without consuming it)
 *>
 macro char peek_next(lexer) 
 {
@@ -152,7 +152,7 @@ macro char peek_next(lexer)
 }
 
 <*
- Is the current character '\0' if so we assume we reached the end.
+ Is the current character '\0' if so we assume we reached the end
 *>
 macro bool reached_end(lexer)
 {
@@ -160,7 +160,8 @@ macro bool reached_end(lexer)
 }
 
 <* 
- Step one character forward and return that character
+ Step one character forward and return that character 
+ This differs from peek because it "consumes" this character, incrementing the lexer
 *>
 fn char next(Lexer* lexer) @inline
 {
@@ -178,7 +179,7 @@ fn char next(Lexer* lexer) @inline
 }
 
 <* 
- Backtrack the buffer read one step.
+ Backtrack the buffer read one step
 *>
 fn void backtrack(Lexer* lexer) @inline 
 {
@@ -190,7 +191,7 @@ fn void backtrack(Lexer* lexer) @inline
 }
 
 <* 
- Skip the x next characters.
+ Skip the x next characters
 *>
 fn void skip(Lexer* lexer, int steps) @inline 
 {
@@ -202,7 +203,7 @@ fn void skip(Lexer* lexer, int steps) @inline
 }
 
 <* 
- Match a single character – if successful, more one step forward.
+ Match a single character – if successful we increment lexer one step forward
 *>
 fn bool match(Lexer* lexer, char expected) @inline 
 {
@@ -219,11 +220,11 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
 {
     if (skip_whitespace(lexer)) 
 	{
-        // Now skip the whitespace (but check for comments).
+        // Now skip the whitespace (but check for comments)
         return true;
     }
 
-    // Point start to the first non-whitespace character.
+    // Point start to the first non-whitespace character
     begin_new_token(lexer);
 
     if (reached_end(lexer)) 
@@ -437,7 +438,7 @@ fn List{Token} Lexer.new_parse_tokens(&self, Allocator allocator = mem)
 
 
 //=================================
-// --- Token creation
+//	Token creation
 //=================================
 
 fn void begin_new_token(Lexer* lexer) @inline 
@@ -457,9 +458,9 @@ fn bool new_token(Lexer* lexer, TokenType type, String string) @inline
 }
 
 <*
- Allocate data for a token, including source location.
+ Allocate data for a token, including source location
  This call is doing the basic allocation, with other functions
- filling out additional information.
+ filling out additional information
 *>
 fn void set_generic_token(Lexer* lexer, TokenType type, String value) @inline 
 {
@@ -495,7 +496,7 @@ fn void set_generic_token(Lexer* lexer, TokenType type, String value) @inline
 }
 
 <*
- Error? We simply generate an invalid token and print out the error.
+ Error? We simply generate an invalid token and print out the error
 *>
 macro bool add_error_token(Lexer* lexer, String message) 
 {
@@ -505,7 +506,7 @@ macro bool add_error_token(Lexer* lexer, String message)
 }
 
 <*
- Error at the start of the lexing, with a single length.
+ Error at the start of the lexing, with a single length
 *>
 macro bool add_error_token_at_start(Lexer* lexer, String message) 
 {
@@ -514,8 +515,8 @@ macro bool add_error_token_at_start(Lexer* lexer, String message)
 }
 
 <*
- Create an error token at a particular place in the file.
- used for pointing out errors in strings etc.
+ Create an error token at a particular place in the file
+ used for pointing out errors in strings etc
 *>
 macro bool add_error_token_at(Lexer* lexer, char* loc, isz len, String message) 
 {
@@ -524,7 +525,7 @@ macro bool add_error_token_at(Lexer* lexer, char* loc, isz len, String message)
 }
 
 <*
- Print an error at the current location.
+ Print an error at the current location
 *>
 macro bool add_error_token_at_current(Lexer* lexer, String message) 
 {

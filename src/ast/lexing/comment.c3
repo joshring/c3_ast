@@ -5,7 +5,7 @@ module ast::lexer;
 
 
 <*
- Skip regular whitespace.
+ Skip regular whitespace
 *>
 fn bool skip_whitespace(Lexer* lexer)
 {
@@ -40,7 +40,7 @@ fn bool skip_whitespace(Lexer* lexer)
                 }
                 return false;
             case '\n':
-                // Contract lexing sees '\n' as a token.
+                // Contract lexing sees '\n' as a token
                 if (lexer.mode == LEX_CONTRACTS) return false;
                 if (has_empty_line) 
 				{
@@ -73,7 +73,7 @@ fn bool skip_whitespace(Lexer* lexer)
 }
 
 <*
- Parsing of the "//" line comment - skipping past the end.
+ Parsing of the "//" line comment - skipping past the end
 *>
 fn bool parse_line_comment(Lexer* lexer) @inline
 {
@@ -114,7 +114,7 @@ fn bool parse_line_comment(Lexer* lexer) @inline
 }
 
 <*
- Parse the common / *  * / style multiline comments, allowing nesting.
+ Parse the common / *  * / style multiline comments, allowing nesting
 *>
 fn bool parse_multiline_comment(Lexer* lexer) @inline
 {

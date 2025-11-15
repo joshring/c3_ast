@@ -331,7 +331,6 @@ macro append_alloc(
 
 <*
  output string of ast node tree
- my version of Ast.@node_join
  TODO: change out_str to be a return value?
 *>
 macro to_string(node_tree, DString out_str, String sep = ",")
@@ -356,7 +355,6 @@ macro to_string(node_tree, DString out_str, String sep = ",")
 
 <*
  iterate to the end of the node tree (linked list) recording its length
- my version of Ast.@node_len
 *>
 macro uint len(node_tree)
 {

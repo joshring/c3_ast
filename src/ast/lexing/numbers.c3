@@ -85,7 +85,7 @@ macro bool next_and_check_no_multiple_(Lexer* lexer)
 <*
  Parsing octals. Here we depart from the (error prone) C style octals with initial zero e.g. 0231
  Instead we only support 0o prefix like 0o231. Note that lexing here doesn't actually parse the
- number itself.
+ number itself
 *>
 fn bool scan_oct(Lexer* lexer) 
 {
@@ -184,7 +184,7 @@ fn bool scan_exponent(Lexer* lexer) @inline
 
 <*
  Scan a hex number, including floating point hex numbers of the format 0x31a31ff.21p12. Note that the
- exponent is written in decimal.
+ exponent is written in decimal
 *>
 fn bool scan_hex(Lexer* lexer) @inline 
 {
@@ -221,22 +221,22 @@ fn bool scan_hex(Lexer* lexer) @inline
 }
 
 <*
- Scans integer and float decimal values.
+ Scans integer and float decimal values
 *>
 fn bool scan_dec(Lexer* lexer) @inline 
 {
     assert(utils::char_is_digit(peek(lexer)));
 
     // Walk through the digits, we don't need to worry about
-    // initial _ because we only call this if we have a digit initially.
+    // initial _ because we only call this if we have a digit initially
     while (utils::char_is_digit_or_(peek(lexer))) next_and_check_no_multiple_(lexer);
 
     // Assume no float.
     bool is_float = false;
 
-    // If we have a single dot, we assume that we have a float.
+    // If we have a single dot, we assume that we have a float
     // Note that this current parsing means we can't have functions on
-    // literals, like "123.sizeof", but we're fine with that.
+    // literals, like "123.sizeof", but we're fine with that
     if (peek(lexer) == '.' && peek_next(lexer) != '.') 
 	{
         is_float = true;
@@ -251,7 +251,7 @@ fn bool scan_dec(Lexer* lexer) @inline
     }
     char c = peek(lexer);
     // We might have an exponential. We allow 123e1 and 123.e1 as floating point, so
-    // just set it to floating point and check the exponential.
+    // just set it to floating point and check the exponential
     if (c == 'e' || c == 'E') 
 	{
         is_float = true;
@@ -269,10 +269,10 @@ fn bool scan_dec(Lexer* lexer) @inline
  0o... . Octal
  0b... . Binary
 
- Default is decimal.
+ Default is decimal
 
  It's actually pretty simple to add encoding schemes here, so for example Base64 could
- be added.
+ be added
 *>
 fn bool scan_digit(Lexer* lexer) @inline 
 {

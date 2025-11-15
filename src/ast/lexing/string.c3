@@ -5,7 +5,7 @@ module ast::lexer;
 
 fn bool scan_char(Lexer* lexer) @inline 
 {
-    // Handle the problem with zero size character literal first.
+    // Handle the problem with zero size character literal first
     if (match(lexer, '\'')) 
 	{
         return add_error_token(lexer, "The character literal was empty.");

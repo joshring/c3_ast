@@ -13,7 +13,7 @@ fn bool parse_doc_start(Lexer* lexer)
 {
     bool may_have_contract = true;
     bool has_new_line = false;
-    // Let's loop until we find the end or the contract.
+    // Let's loop until we find the end or the contract
     while LOOP: (!reached_end(lexer)) 
 	{
         char c = peek(lexer);
