@@ -5,18 +5,16 @@ import std::math;
 <*
  tries to extent current AT_IDENT
  for handling @if(env::SOO || SOME) @export("something")
+ 
+ @require math::abs(lexer.current - lexer.token.value.ptr) < 64 : `this must be called AT_IDENT parsed`
+ @require lexer.token.type == AT_IDENT || lexer.token.type == AT_TYPE_IDENT
+ @require lexer.token.value != ""
+ @require lexer.token.value.ptr >= lexer.file_begin
+ @require lexer.token.value.ptr < lexer.file_begin + lexer.file_len
 *>
 fn void Lexer.extend_current_attribute(Lexer* lexer)
 {
     Token* result = &lexer.token;
-    assert(lexer.token.type == AT_IDENT || lexer.token.type == AT_TYPE_IDENT);
-    assert(
-        math::abs(lexer.current - lexer.token.value.ptr) < 64,
-        "this must be called AT_IDENT parsed"
-    );
-    assert(lexer.token.value);
-    assert(lexer.token.value.ptr >= lexer.file_begin);
-    assert(lexer.token.value.ptr < lexer.file_begin + lexer.file_len);
 
     int nesting = 0;
     int extra_len = 0;

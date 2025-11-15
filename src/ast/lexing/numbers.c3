@@ -222,11 +222,11 @@ fn bool scan_hex(Lexer* lexer) @inline
 
 <*
  Scans integer and float decimal values
+ 
+ @require utils::char_is_digit(peek(lexer))
 *>
 fn bool scan_dec(Lexer* lexer) @inline 
 {
-    assert(utils::char_is_digit(peek(lexer)));
-
     // Walk through the digits, we don't need to worry about
     // initial _ because we only call this if we have a digit initially
     while (utils::char_is_digit_or_(peek(lexer))) next_and_check_no_multiple_(lexer);

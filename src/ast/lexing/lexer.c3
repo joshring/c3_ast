@@ -192,10 +192,10 @@ fn void backtrack(Lexer* lexer) @inline
 
 <* 
  Skip the x next characters
+ @require steps > 0
 *>
 fn void skip(Lexer* lexer, int steps) @inline 
 {
-    assert(steps > 0);
     for (int i = 0; i < steps; i++) 
 	{
         next(lexer);
@@ -235,6 +235,7 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
 
     ichar c = peek(lexer);
     next(lexer);
+	
     switch (c) 
 	{
         case '\n':
@@ -272,7 +273,7 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
         case ';':
             return new_token(lexer, EOS, ";");
         case '{':
-            return match(lexer, '|') ? new_token(lexer, LBRAPIPE, "{|") : new_token(lexer, LBRACE, "{");
+            return match(lexer, '|') ? new_token(lexer, LBRAPIPE, "{|") : new_token(lexer, LBRACE, "{"); 
         case '}':
             return new_token(lexer, RBRACE, "}");
         case '(':
@@ -418,16 +419,13 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
 <*
  Parses lexer contents and returns new list of all available tokens
 
- @param allocator : "optional allocator for resulting list"
+ @require self.file_begin != "" : `lexer not initialied`
+ @require self.file_begin == self.current : `file_begin must be equal to current, otherwise has already been processed`
  @return "list of all tokens in lexer string"
 *>
-fn List{Token} Lexer.new_parse_tokens(&self, Allocator allocator = mem)
+fn List{Token} Lexer.new_parse_tokens(&self)
 {
-    assert(self.file_begin, "not initialied");
-    assert(self.file_begin == self.current, "already processed");
-
     List{Token} result;
-    result.init(allocator: allocator);
 
     while (self.next_token()) 
 	{
@@ -461,11 +459,11 @@ fn bool new_token(Lexer* lexer, TokenType type, String string) @inline
  Allocate data for a token, including source location
  This call is doing the basic allocation, with other functions
  filling out additional information
+ 
+ @require lexer.lexing_start >= lexer.file_begin
 *>
 fn void set_generic_token(Lexer* lexer, TokenType type, String value) @inline 
 {
-    assert(lexer.lexing_start >= lexer.file_begin);
-
     lexer.token.type = type;
     // Set the location.
     lexer.token.value = value;

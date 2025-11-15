@@ -9,6 +9,10 @@ import std::sort;
 import std::collections::list;
 import std::collections::map;
 
+<*
+ @require file_path != "" : `empty path`
+ @require file_path.ends_with(".c3") : `file_path must be *.c3 file extension`
+*>
 fn Ast parse(
     String contents, 
 	String file_path, 
@@ -16,8 +20,6 @@ fn Ast parse(
 )
 {
     Ast ast;
-    assert(file_path, "empty path");
-    assert(file_path.ends_with(".c3"), "wrong extension");
     ast.path = file_path.tcopy();
 
     lexer::init(&ast.lexer, contents);
@@ -258,12 +260,15 @@ struct AstDocContract
 module ast::node;
 
 import ast::lexer;
-
+ 
+<*
+ return last node
+ @require node_tree != null
+*>
 macro last(node_tree) 
 {
 	var $InputType = $typeof(node_tree);
 	
-    assert(node_tree != null);
     $InputType node = node_tree;
 	
     while (node.next != null) 
@@ -279,8 +284,6 @@ macro last(node_tree)
 *>
 macro AstNode* append(AstNode** node_tree, AstNode* new) 
 {
-    assert(node_tree != null);
-
     if (*node_tree == null) 
 	{
         *node_tree = new;

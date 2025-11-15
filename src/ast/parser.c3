@@ -91,9 +91,11 @@ macro TokenType NodeParserState.transition(&self, TokenType new_state)
     return new_state;
 }
 
+<*
+ @require node.type == MODULE
+*>
 fn bool Ast.parse_module(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node.type == MODULE);
     AstModule* m = (AstModule*)node;
 
     switch STATE: (state.check(t)) 
@@ -136,9 +138,11 @@ fn bool Ast.parse_module(&ast, AstNode* node, Token* t, NodeParserState* state)
     return false;
 }
 
+<*
+ @require node.type == IMPORT
+*>
 fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node.type == IMPORT);
     AstImport* imp = (AstImport*)node::last(node);
 
     switch STATE: (state.check(t)) 
@@ -309,9 +313,11 @@ macro parse_callable_params(
     }
 }
 
+<*
+ @require node.type == FN || node.type == MACRO
+*>
 fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node.type == FN || node.type == MACRO);
     AstCallable* node_func = (AstCallable*)node;
 
     switch STATE: (state.check(t)) 
@@ -430,9 +436,11 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
     return false;
 }
 
+<*
+ @require node.type == DOCS_START
+*>
 fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node.type == DOCS_START);
     AstDoc* doc = (AstDoc*)node;
 
     switch STATE: (state.check(t)) 
@@ -492,9 +500,11 @@ fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* stat
     return false;
 }
 
+<*
+ @require node.type == ENUM || node.type == FAULT
+*>
 fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node.type == ENUM || node.type == FAULT);
     AstTypeDefEnumerable* node_enum = (AstTypeDefEnumerable*)node;
 
     switch STATE: (state.check(t)) 
@@ -560,9 +570,11 @@ fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* sta
     return false;
 }
 
+<*
+ @require node.type == INTERFACE
+*>
 fn bool Ast.parse_interface(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node.type == INTERFACE);
     AstTypeDefInterface* node_ifc = (AstTypeDefInterface*)node;
 
     switch STATE: (state.check(t)) 
@@ -660,10 +672,12 @@ fn bool Ast.parse_interface(&ast, AstNode* node, Token* t, NodeParserState* stat
     return false;
 }
 
+<*
+ @require node != null
+ @require node.type == STRUCT || node.type == UNION || node.type == BITSTRUCT
+*>
 fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node);
-    assert(node.type == STRUCT || node.type == UNION || node.type == BITSTRUCT);
     AstTypeDefStructural* node_struct = (AstTypeDefStructural*)node;
 
     switch STATE: (state.check(t)) 
@@ -834,9 +848,11 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
     return false;
 }
 
+<*
+ @require node.type == TYPE_IDENT || node.type == TLOCAL
+*>
 fn bool Ast.parse_global_var(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node.type == TYPE_IDENT || node.type == TLOCAL);
     AstTypeDef* node_typedef = (AstTypeDef*)node;
 
     switch STATE: (state.check(t)) 
@@ -885,9 +901,12 @@ fn bool Ast.parse_global_var(&ast, AstNode* node, Token* t, NodeParserState* sta
     return false;
 }
 
+
+<*
+ @require node.type == DEF || node.type == DISTINCT
+*>
 fn bool Ast.parse_typedef(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node.type == DEF || node.type == DISTINCT);
     AstTypeDef* node_typedef = (AstTypeDef*)node;
 
     switch STATE: (state.check(t)) 
@@ -936,9 +955,11 @@ fn bool Ast.parse_typedef(&ast, AstNode* node, Token* t, NodeParserState* state)
     return false;
 }
 
+<*
+ @require node.type == CONST
+*>
 fn bool Ast.parse_constants(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
-    assert(node.type == CONST);
     AstTypeDef* node_typedef = (AstTypeDef*)node;
 
     switch STATE: (state.check(t)) 

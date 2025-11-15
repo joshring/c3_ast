@@ -275,10 +275,11 @@ fn String Token.to_string(&self, Allocator allocator) @dynamic
 	);
 }
 
+<*
+ @require padding >= 0
+*>
 fn void Token.print(&self, bool new_line = false, int padding = 0)
 {
-    assert(padding >= 0);
-
     usz plen = 0;
     switch (self.type) 
 	{

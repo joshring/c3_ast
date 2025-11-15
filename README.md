@@ -17,7 +17,7 @@
 	
 	LBRAPIPE {| and |} were removed
 	
-	List(<MyType>) became List{MyType}
+	List(<MyType>) became List{MyType}   type{type}
 	
 	
 	(< LGENPAR
