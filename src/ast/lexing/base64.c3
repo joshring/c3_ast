@@ -2,7 +2,9 @@ module ast::lexer;
 
 import ast::utils;
 
-// Scan b64"abc=" and b64'abc='
+<* 
+ Scan b64"abc=" and b64'abc='
+*>
 fn bool scan_base64(Lexer* lexer) @inline 
 {
     next(lexer);  // Step past 6

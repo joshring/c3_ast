@@ -6,7 +6,9 @@ import ast::utils;
 // --- Lexer doc lexing
 
 
-// Parse the <* *> directives comments
+<* 
+ Parse doc comments
+*>
 fn bool parse_doc_start(Lexer* lexer) 
 {
     bool may_have_contract = true;

@@ -293,20 +293,27 @@ macro AstNode* append(AstNode** node_tree, AstNode* new)
     return new;
 }
 
-macro @node_foreach(#self; @body(item))
+<*
+ Apply a function to a node tree
+ Q: is there a simpler way to achieve this?
+*>
+macro @node_foreach(#node_tree; @body(item))
 {
-    var node = #self;
+    var node = #node_tree;
     while (node != null) 
 	{
         @body(node);
-        node = ($typeof(#self))node.next;
+        node = ($typeof(#node_tree))node.next;
     }
 }
 
-
+<*
+ Append allocated ast node to last node
+ @require node_tree != null
+*>
 macro append_alloc(
 	$Type, 
-	AstNode** collection, 
+	AstNode** node_tree, 
 	lexer::Token* token,
 ) 
 {
@@ -317,7 +324,7 @@ macro append_alloc(
         .iend = token.offset + token.value.len,
         .value = token.value.tcopy(),
     };
-    return append(collection, result);
+    return append(node_tree, result);
 }
 
 
