@@ -6,14 +6,21 @@
 - Tests updated []
 - Investigate ways to simplify
 - Integrate into LSP
+- replace `ast.@node_at` with `ast::traverse_to_index`
+- replace `ast.@node_len` with `ast::traverse_len`
+
 
 ### language syntax changes since this was written
 ```c3
 	/** and */ were replaced with <* and *>
 	
-	{| and |} were removed
+	LBRAPIPE {| and |} were removed
 	
 	List(<MyType>) became List{MyType}
+	
+	
+	(< LGENPAR
+	>) RGENPAR
 	
 	read more here: https://github.com/c3lang/c3c/blob/master/releasenotes.md
 ```

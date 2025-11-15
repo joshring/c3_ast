@@ -19,13 +19,13 @@ macro TokenType NodeParserState.prev_scope(&self, usz offset)
 macro NodeParserState.check_scope(&self, TokenType t)
 {
 
+    // case LGENPAR:  // (<
     switch (t) 
 	{
         case LBRACE:  // {
         case LBRACKET:  // [
         case LPAREN:  // (
         case LBRAPIPE:  // {|
-        case LGENPAR:  // (<
         case LVEC:  // [<
         case DOCS_START:  // <*
             if (self.scope_depth >= self.scope_stack.len) return;
@@ -55,9 +55,9 @@ macro NodeParserState.check_scope(&self, TokenType t)
         case RBRAPIPE:  // |}
             if (self.scope_depth == 0) nextcase default;
             if (self.scope_stack[self.scope_depth - 1] == LBRAPIPE) nextcase EOF;
-        case RGENPAR:  // >)
-            if (self.scope_depth == 0) nextcase default;
-            if (self.scope_stack[self.scope_depth - 1] == LGENPAR) nextcase EOF;
+        // case RGENPAR:  // >)
+        //     if (self.scope_depth == 0) nextcase default;
+        //     if (self.scope_stack[self.scope_depth - 1] == LGENPAR) nextcase EOF;
         case RVEC:  // >)
             if (self.scope_depth == 0) nextcase default;
             if (self.scope_stack[self.scope_depth - 1] == LVEC) nextcase EOF;
@@ -748,7 +748,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                     } 
 					else 
 					{
-                        // Adding to existing type field (e.g. generic List(<MyType>) )
+                        // Adding to existing type field (e.g. generic List{MyType} )
                         ast.@allc_add(AstNode, &s.ftype, t);
                     }
                 case IDENT:

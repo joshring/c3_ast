@@ -183,30 +183,86 @@ macro Ast.@node_join(self, node, DString out_str, String sep = ",")
     return out_str.str_view();
 }
 
-macro uint Ast.@node_len(self, node)
+// <*
+//  DEPRECATED: use ast::len
+//  iterate to the end of the linked list recording its length
+// *>
+// macro uint Ast.@node_len(self, node)
+// {
+//     uint len = 0;
+//     $typeof(node) _node = node;
+//     while (_node) 
+// 	{
+//         len++;
+//         _node = ($typeof(node))_node.next;
+//     }
+//     return len;
+// }
+
+<*
+ my version of Ast.@node_len
+ iterate to the end of the linked list recording its length
+*>
+macro uint len(linked_list)
 {
+	var $InputType = $typeof(linked_list);
+	
     uint len = 0;
-    $typeof(node) _node = node;
-    while (_node) 
+    $InputType search_node = linked_list;
+	
+    while (search_node != null) 
 	{
         len++;
-        _node = ($typeof(node))_node.next;
+        search_node = ($InputType)search_node.next;
     }
     return len;
 }
 
-macro Ast.@node_at(self, node, uint index)
+// <*
+//  DEPREACTED: use ast::index
+ 
+//  return the node of a given type at a given index
+//  traverses linked list until next==null I think?
+ 
+//  Q: isn't this function a bit strange? why not return the node at a given index instead? 
+//  	it feels strange/unnecesisary giving the type as a paramter
+// *>
+// macro Ast.@node_at(self, node, uint index)
+// {
+//     uint len = 0;
+//     $typeof(node) _node = node;
+//     while (_node) 
+// 	{
+//         if (len == index) return _node;
+//         len++;
+//         _node = ($typeof(node))_node.next;
+//     }
+//     return _node;
+// }
+
+<*
+ my version of Ast.@node_at
+
+ return the node of a given type at a given index
+ traverses linked list until next==null
+
+*>
+macro index(linked_list, uint index)
 {
+	var $InputType = $typeof(linked_list);
+	
     uint len = 0;
-    $typeof(node) _node = node;
-    while (_node) 
+    $InputType search_node = linked_list;
+	
+    while (search_node != null) 
 	{
-        if (len == index) return _node;
+        if (len == index) return search_node;
+        search_node = ($InputType)search_node.next;
         len++;
-        _node = ($typeof(node))_node.next;
     }
-    return _node;
+    return null;
 }
+
 
 macro String Ast.@allc_str(&self, String s) 
 {

@@ -26,10 +26,10 @@ fn void test_node() {
     test::@check(path.ptr != ast.path.ptr, "should be copied");
 
     test::ne(ast.modules, null);
-    test::eq(ast.@node_len(ast.modules), 1);
+    test::eq(ast::len(ast.modules), 1);
     test::eq(ast.@node_join(ast.modules, contents, ","), "test::std::c3lang::ast");
 
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
     test::eq(m.value, "test::std::c3lang::ast");
@@ -61,7 +61,7 @@ fn void test_module_no_attr()
     defer mem::free(ast.allocator);
     contents.clear();
 
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::eq(ast.@node_join(m.name, contents, "::"), "test::std::c3lang::ast");
     test::eq(m.attributes, null);
 
@@ -82,15 +82,15 @@ fn void test_module_imports()
     defer mem::free(ast.allocator);
     contents.clear();
 
-    test::eq(ast.@node_len(ast.modules), 2);
+    test::eq(ast::len(ast.modules), 2);
     test::eq(ast.@node_join(ast.modules, contents, ","), ",test::std::c3lang::ast");
 
-    AstModule* m = ast.@node_at(ast.modules, 1);
+    AstModule* m = ast::index(ast.modules, 1);
     test::eq(ast.@node_join(m.name, contents, "::"), "test::std::c3lang::ast");
     test::eq(m.attributes, null);
     test::eq(m.file_path, ast.path);
 
-    m = ast.@node_at(ast.modules, 0);
+    m = ast::index(ast.modules, 0);
     test::eq(ast.@node_join(m.name, contents, "::"), "");
     test::eq(m.attributes, null);
     test::eq(m.file_path, ast.path);
@@ -100,6 +100,22 @@ fn void test_module_imports()
 
 fn void test_scope()
 {
+	/**
+	going down the scopes and then back up the scopes 
+	
+	{
+		[
+			(|                    this needs to removed...
+				[<
+				
+					Exiting the scope in reverse order
+				
+				>]
+			|)                    this needs to be removed...
+		]
+	}
+	
+	*/
     NodeParserState state;
     TokenType t;
 
@@ -123,25 +139,25 @@ fn void test_scope()
     test::eq(state.scope_depth, 4);
     test::eq(state.scope_stack[state.scope_depth - 1], t);
 
-    t = TokenType.LGENPAR;
-    state.check_scope(t);
-    test::eq(state.scope_depth, 5);
-    test::eq(state.scope_stack[state.scope_depth - 1], t);
+    // t = TokenType.LGENPAR;
+    // state.check_scope(t);
+    // test::eq(state.scope_depth, 5);
+    // test::eq(state.scope_stack[state.scope_depth - 1], t);
 
     t = TokenType.LVEC;
     state.check_scope(t);
-    test::eq(state.scope_depth, 6);
+    test::eq(state.scope_depth, 5);
     test::eq(state.scope_stack[state.scope_depth - 1], t);
 
     // EXIT SCOPE in reverse order
 
     t = TokenType.RVEC;
     state.check_scope(t);
-    test::eq(state.scope_depth, 5);
-
-    t = TokenType.RGENPAR;
-    state.check_scope(t);
     test::eq(state.scope_depth, 4);
+
+    // t = TokenType.RGENPAR;
+    // state.check_scope(t);
+    // test::eq(state.scope_depth, 4);
 
     t = TokenType.RBRAPIPE;
     state.check_scope(t);
@@ -198,10 +214,10 @@ fn void test_node() {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(m, null);
 
     test::eq(func.type, TokenType.FN);
@@ -221,7 +237,7 @@ fn void test_node() {
 fn void test_func_generic_ret_type()
 {
     String code = `module test::std::c3lang::ast;
-fn List(<int>) test_node() {
+fn List{int} test_node() {
     return 1;
 }
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
@@ -231,15 +247,15 @@ fn List(<int>) test_node() {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(m, null);
 
     test::eq(func.type, TokenType.FN);
     test::eq(ast.@node_join(func.name, contents), "test_node");
-    test::eq(ast.@node_join(func.ftype, contents), "List,(<,int,>)");
+    test::eq(ast.@node_join(func.ftype, contents), "List,{,int,}");
     test::eq(func.params, null);
 
     io::printf("\n\n``%s``", code[func.istart .. math::min((isz)func.iend, (isz)(code.len - 1))]);
@@ -261,10 +277,10 @@ fn int[<2>] test_node() {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(m, null);
 
     test::eq(func.type, TokenType.FN);
@@ -291,10 +307,10 @@ fn MyType* test_node() {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.FN);
@@ -311,7 +327,7 @@ fn MyType* test_node() {
 fn void test_func_params()
 {
     String code = `module test::std::c3lang::ast;
-fn void test_node(int a, List(<int>) b) @test @inline @if(env::LIBC) {
+fn void test_node(int a, List{int} b) @test @inline @if(env::LIBC) {
     return 1;
 }
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
@@ -321,10 +337,10 @@ fn void test_node(int a, List(<int>) b) @test @inline @if(env::LIBC) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(m, null);
 
     test::eq(func.type, TokenType.FN);
@@ -332,21 +348,21 @@ fn void test_node(int a, List(<int>) b) @test @inline @if(env::LIBC) {
     test::eq(ast.@node_join(func.ftype, contents), "void");
 
     test::ne(func.params, null);
-    test::eq(ast.@node_len(func.params), 2);
+    test::eq(ast::len(func.params), 2);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "a");
     test::eq(ast.@node_join(param.param_type, contents), "int");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 1);
+    param = (AstCallableParam*)ast::index(func.params, 1);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "b");
-    test::eq(ast.@node_join(param.param_type, contents), "List,(<,int,>)");
+    test::eq(ast.@node_join(param.param_type, contents), "List,{,int,}");
 
     test::ne(func.attributes, null);
-    test::eq(ast.@node_len(func.attributes), 3);
+    test::eq(ast::len(func.attributes), 3);
     test::eq(ast.@node_join(func.attributes, contents), "@test,@inline,@if(env::LIBC)");
 
     io::printf("\n\n``%s``", code[func.istart .. math::min((isz)func.iend, (isz)(code.len - 1))]);
@@ -369,21 +385,21 @@ fn void test_import()
     defer mem::free(ast.allocator);
     contents.clear();
 
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::eq(ast.@node_join(m.name, contents, "::"), "test::std::c3lang::ast");
     test::eq(m.attributes, null);
 
     test::ne(m.imports, null);
-    test::eq(ast.@node_len(m.imports), 2);
+    test::eq(ast::len(m.imports), 2);
     AstImport* imp;
 
-    imp = ast.@node_at(m.imports, 0);
+    imp = ast::index(m.imports, 0);
     test::eq(imp.type, TokenType.IMPORT);
     test::eq(imp.value, "import");
     test::eq(ast.@node_join(imp.name, contents, "::"), "test::std::c3lang::ast::foo");
     test::eq(ast.@node_join(imp.attributes, contents), "@test,@if(env::FOO)");
 
-    imp = ast.@node_at(m.imports, 1);
+    imp = ast::index(m.imports, 1);
     test::eq(imp.type, TokenType.IMPORT);
     test::eq(imp.value, "import");
     test::eq(ast.@node_join(imp.name, contents, "::"), "single_mod");
@@ -404,7 +420,7 @@ module test::std::c3lang::ast;
     defer mem::free(ast.allocator);
     contents.clear();
 
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::eq(ast.@node_join(m.name, contents, "::"), "test::std::c3lang::ast");
     test::eq(m.attributes, null);
 
@@ -435,14 +451,14 @@ fn void test_node() {
     defer mem::free(ast.allocator);
     contents.clear();
 
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::eq(ast.@node_join(m.name, contents, "::"), "test::std::c3lang::ast");
     test::eq(m.attributes, null);
 
     test::ne(m.docs, null);
     test::@check(m.docs.value.contains("My module"));
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
     test::ne(func.docs, null);
 
@@ -470,7 +486,7 @@ module test::std::c3lang::ast;
     defer mem::free(ast.allocator);
     contents.clear();
 
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::eq(ast.@node_join(m.name, contents, "::"), "test::std::c3lang::ast");
     test::eq(m.attributes, null);
 
@@ -478,36 +494,36 @@ module test::std::c3lang::ast;
     test::@check(m.docs.value.contains("My module"));
 
     test::ne(m.docs.contracts, null);
-    test::eq(ast.@node_len(m.docs.contracts), 6);
+    test::eq(ast::len(m.docs.contracts), 6);
 
     AstDocContract* contract;
 
-    contract = ast.@node_at(m.docs.contracts, 0);
+    contract = ast::index(m.docs.contracts, 0);
     test::eq(contract.value, "@param");
     test::eq(contract.type, TokenType.AT_IDENT);
     test::eq(ast.@node_join(contract.items, contents), `foo,"some info"`);
 
-    contract = ast.@node_at(m.docs.contracts, 1);
+    contract = ast::index(m.docs.contracts, 1);
     test::eq(contract.value, "@test");
     test::eq(contract.type, TokenType.AT_IDENT);
     test::eq(ast.@node_join(contract.items, contents), ``);
 
-    contract = ast.@node_at(m.docs.contracts, 2);
+    contract = ast::index(m.docs.contracts, 2);
     test::eq(contract.value, "@param");
     test::eq(contract.type, TokenType.AT_IDENT);
     test::eq(ast.@node_join(contract.items, contents), `foo,"some info"`);
 
-    contract = ast.@node_at(m.docs.contracts, 3);
+    contract = ast::index(m.docs.contracts, 3);
     test::eq(contract.value, "@return");
     test::eq(contract.type, TokenType.AT_IDENT);
     test::eq(ast.@node_join(contract.items, contents), `"some stuff"`);
 
-    contract = ast.@node_at(m.docs.contracts, 4);
+    contract = ast::index(m.docs.contracts, 4);
     test::eq(contract.value, "@return");
     test::eq(contract.type, TokenType.AT_IDENT);
     test::eq(ast.@node_join(contract.items, contents), `!,Fault,.,SOME,,,IoError,.,ANOTHER`);
 
-    contract = ast.@node_at(m.docs.contracts, 5);
+    contract = ast::index(m.docs.contracts, 5);
     test::eq(contract.value, "@requre");
     test::eq(contract.type, TokenType.AT_IDENT);
     test::eq(ast.@node_join(contract.items, contents), `a,>,0,,,a,<,d`);
@@ -527,10 +543,10 @@ fn void test_node(int a, int b = 2) @test @inline @if(env::LIBC) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(m, null);
 
     test::eq(func.type, TokenType.FN);
@@ -538,21 +554,21 @@ fn void test_node(int a, int b = 2) @test @inline @if(env::LIBC) {
     test::eq(ast.@node_join(func.ftype, contents), "void");
 
     test::ne(func.params, null);
-    test::eq(ast.@node_len(func.params), 2);
+    test::eq(ast::len(func.params), 2);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "a");
     test::eq(ast.@node_join(param.param_type, contents), "int");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 1);
+    param = (AstCallableParam*)ast::index(func.params, 1);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "b");
     test::eq(ast.@node_join(param.param_type, contents), "int,=,2");
 
     test::ne(func.attributes, null);
-    test::eq(ast.@node_len(func.attributes), 3);
+    test::eq(ast::len(func.attributes), 3);
     test::eq(ast.@node_join(func.attributes, contents), "@test,@inline,@if(env::LIBC)");
 
     io::printf("\n\n``%s``", code[func.istart .. math::min((isz)func.iend, (isz)(code.len - 1))]);
@@ -574,10 +590,10 @@ fn MyType* MyFoo.test_node(&self) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.FN);
@@ -585,10 +601,10 @@ fn MyType* MyFoo.test_node(&self) {
     test::eq(ast.@node_join(func.name, contents), "MyFoo,test_node");
     test::eq(ast.@node_join(func.ftype, contents), "MyType,*");
 
-    test::eq(ast.@node_len(func.params), 1);
+    test::eq(ast::len(func.params), 1);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "self");
     // test::eq(param.param_type, null);
@@ -611,10 +627,10 @@ fn char! String.to_uchar(s, int base = 10) @inline @test => s.@to_integer(char, 
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.FN);
@@ -623,16 +639,16 @@ fn char! String.to_uchar(s, int base = 10) @inline @test => s.@to_integer(char, 
     test::eq(ast.@node_join(func.attributes, contents), "@inline,@test");
     test::ne(func.params, null);
 
-    test::eq(ast.@node_len(func.params), 2);
+    test::eq(ast::len(func.params), 2);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "s");
     test::eq(param.param_type.type, TokenType.TYPE_IDENT);
     test::eq(ast.@node_join(param.param_type, contents), "String");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 1);
+    param = (AstCallableParam*)ast::index(func.params, 1);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "base");
     test::eq(ast.@node_join(param.param_type, contents), "int,=,10");
@@ -656,20 +672,20 @@ macro MyFoo.@test_macro(self) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.MACRO);
     test::eq(ast.@node_join(func.ftype, contents), "");
     test::eq(ast.@node_join(func.name, contents), "MyFoo,@test_macro");
 
-    test::eq(ast.@node_len(func.params), 1);
+    test::eq(ast::len(func.params), 1);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "self");
     // test::eq(param.param_type, null);
@@ -684,7 +700,7 @@ macro MyFoo.@test_macro(self) {
 fn void test_macro_type_with_ret_type()
 {
     String code = `module test::std::c3lang::ast;
-macro MyType(<$it>) MyFoo.@test_macro(self) {
+macro MyType{$it} MyFoo.@test_macro(self) {
     return 1;
 }
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
@@ -694,20 +710,20 @@ macro MyType(<$it>) MyFoo.@test_macro(self) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.MACRO);
-    test::eq(ast.@node_join(func.ftype, contents), "MyType,(<,$it,>)");
+    test::eq(ast.@node_join(func.ftype, contents), "MyType,{,$it,}");
     test::eq(ast.@node_join(func.name, contents), "MyFoo,@test_macro");
 
-    test::eq(ast.@node_len(func.params), 1);
+    test::eq(ast::len(func.params), 1);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "self");
     // test::eq(param.param_type, null);
@@ -732,10 +748,10 @@ macro @test_macro(self) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.MACRO);
@@ -743,10 +759,10 @@ macro @test_macro(self) {
     test::eq(ast.@node_join(func.ftype, contents), "");
     test::eq(ast.@node_join(func.name, contents), "@test_macro");
 
-    test::eq(ast.@node_len(func.params), 1);
+    test::eq(ast::len(func.params), 1);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "self");
     test::eq(param.param_type, null);
@@ -771,10 +787,10 @@ macro @test_macro(Type* #self, $bar) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.MACRO);
@@ -782,16 +798,16 @@ macro @test_macro(Type* #self, $bar) {
     test::eq(ast.@node_join(func.ftype, contents), "");
     test::eq(ast.@node_join(func.name, contents), "@test_macro");
 
-    test::eq(ast.@node_len(func.params), 2);
+    test::eq(ast::len(func.params), 2);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "#self");
     // test::eq(param.param_type, null);
     test::eq(ast.@node_join(param.param_type, contents), "Type,*");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 1);
+    param = (AstCallableParam*)ast::index(func.params, 1);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "$bar");
     test::eq(ast.@node_join(param.param_type, contents), "");
@@ -815,10 +831,10 @@ macro @test_macro(double... a, ...args) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.MACRO);
@@ -826,16 +842,16 @@ macro @test_macro(double... a, ...args) {
     test::eq(ast.@node_join(func.ftype, contents), "");
     test::eq(ast.@node_join(func.name, contents), "@test_macro");
 
-    test::eq(ast.@node_len(func.params), 2);
+    test::eq(ast::len(func.params), 2);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "a");
     // test::eq(param.param_type, null);
     test::eq(ast.@node_join(param.param_type, contents), "double,...");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 1);
+    param = (AstCallableParam*)ast::index(func.params, 1);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "args");
     test::eq(ast.@node_join(param.param_type, contents), "...");
@@ -859,10 +875,10 @@ macro @test_macro(Type* #self @unused, $bar @export("foo") @ok) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.MACRO);
@@ -870,17 +886,17 @@ macro @test_macro(Type* #self @unused, $bar @export("foo") @ok) {
     test::eq(ast.@node_join(func.ftype, contents), "");
     test::eq(ast.@node_join(func.name, contents), "@test_macro");
 
-    test::eq(ast.@node_len(func.params), 2);
+    test::eq(ast::len(func.params), 2);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "#self");
     // test::eq(param.param_type, null);
     test::eq(ast.@node_join(param.param_type, contents), "Type,*");
     test::eq(ast.@node_join(param.attributes, contents), "@unused");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 1);
+    param = (AstCallableParam*)ast::index(func.params, 1);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "$bar");
     test::eq(ast.@node_join(param.param_type, contents), "");
@@ -908,10 +924,10 @@ macro @for_each(list; @body(it))
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.MACRO);
@@ -919,17 +935,17 @@ macro @for_each(list; @body(it))
     test::eq(ast.@node_join(func.ftype, contents), "");
     test::eq(ast.@node_join(func.name, contents), "@for_each");
 
-    test::eq(ast.@node_len(func.params), 2);
+    test::eq(ast::len(func.params), 2);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "list");
     test::eq(param.param_type, null);
     // test::eq(ast.@node_join(param.param_type, contents), "Type,*");
     // test::eq(ast.@node_join(param.attributes, contents), "@unused");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 1);
+    param = (AstCallableParam*)ast::index(func.params, 1);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "@body");
     test::eq(ast.@node_join(param.param_type, contents), "(,it,)");
@@ -956,27 +972,27 @@ enum Foo {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefEnumerable* enum_type = (AstTypeDefEnumerable*)ast.@node_at(m.decls, 0);
+    AstTypeDefEnumerable* enum_type = (AstTypeDefEnumerable*)ast::index(m.decls, 0);
     test::ne(enum_type, null);
 
     test::eq(enum_type.type, TokenType.ENUM);
     test::eq(enum_type.value, "Foo");
 
-    test::eq(ast.@node_len(enum_type.values), 3);
+    test::eq(ast::len(enum_type.values), 3);
     AstNode* eval;
 
-    eval = ast.@node_at(enum_type.values, 0);
+    eval = ast::index(enum_type.values, 0);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "A");
 
-    eval = ast.@node_at(enum_type.values, 1);
+    eval = ast::index(enum_type.values, 1);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "RUNNING");
 
-    eval = ast.@node_at(enum_type.values, 2);
+    eval = ast::index(enum_type.values, 2);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "FOO");
 
@@ -1003,27 +1019,27 @@ enum Foo : int {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefEnumerable* enum_type = (AstTypeDefEnumerable*)ast.@node_at(m.decls, 0);
+    AstTypeDefEnumerable* enum_type = (AstTypeDefEnumerable*)ast::index(m.decls, 0);
     test::ne(enum_type, null);
 
     test::eq(enum_type.type, TokenType.ENUM);
     test::eq(enum_type.value, "Foo");
 
-    test::eq(ast.@node_len(enum_type.values), 3);
+    test::eq(ast::len(enum_type.values), 3);
     AstNode* eval;
 
-    eval = ast.@node_at(enum_type.values, 0);
+    eval = ast::index(enum_type.values, 0);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "A");
 
-    eval = ast.@node_at(enum_type.values, 1);
+    eval = ast::index(enum_type.values, 1);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "RUNNING");
 
-    eval = ast.@node_at(enum_type.values, 2);
+    eval = ast::index(enum_type.values, 2);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "FOO");
 
@@ -1050,28 +1066,28 @@ enum Foo : int (String desc, bool active, Position pos) @test @if(env:FOO) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefEnumerable* enum_type = (AstTypeDefEnumerable*)ast.@node_at(m.decls, 0);
+    AstTypeDefEnumerable* enum_type = (AstTypeDefEnumerable*)ast::index(m.decls, 0);
     test::ne(enum_type, null);
 
     test::eq(enum_type.type, TokenType.ENUM);
     test::eq(enum_type.value, "Foo");
     test::eq(ast.@node_join(enum_type.attributes, contents), "@test,@if(env:FOO)");
 
-    test::eq(ast.@node_len(enum_type.values), 3);
+    test::eq(ast::len(enum_type.values), 3);
     AstNode* eval;
 
-    eval = ast.@node_at(enum_type.values, 0);
+    eval = ast::index(enum_type.values, 0);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "A");
 
-    eval = ast.@node_at(enum_type.values, 1);
+    eval = ast::index(enum_type.values, 1);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "RUNNING");
 
-    eval = ast.@node_at(enum_type.values, 2);
+    eval = ast::index(enum_type.values, 2);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "FOO");
 
@@ -1099,10 +1115,10 @@ fault SomeFault @local @if(env::FOO)
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefEnumerable* enum_type = (AstTypeDefEnumerable*)ast.@node_at(m.decls, 0);
+    AstTypeDefEnumerable* enum_type = (AstTypeDefEnumerable*)ast::index(m.decls, 0);
     test::ne(enum_type, null);
 
     test::eq(enum_type.type, TokenType.FAULT);
@@ -1110,18 +1126,18 @@ fault SomeFault @local @if(env::FOO)
 
     test::eq(ast.@node_join(enum_type.attributes, contents), "@local,@if(env::FOO)");
 
-    test::eq(ast.@node_len(enum_type.values), 3);
+    test::eq(ast::len(enum_type.values), 3);
     AstNode* eval;
 
-    eval = ast.@node_at(enum_type.values, 0);
+    eval = ast::index(enum_type.values, 0);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "A");
 
-    eval = ast.@node_at(enum_type.values, 1);
+    eval = ast::index(enum_type.values, 1);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "RUNNING");
 
-    eval = ast.@node_at(enum_type.values, 2);
+    eval = ast::index(enum_type.values, 2);
     test::eq(eval.type, TokenType.CONST_IDENT);
     test::eq(eval.value, "FOO");
 
@@ -1138,7 +1154,7 @@ fn void test_interface_type()
     String code = `module test::std::c3lang::ast;
 interface NodeI @local {
     fn bool foo(Ast* ast, AstNode* node, Token* t) @local;
-    fn List(<int>) bar() @local;
+    fn List{int} bar() @local;
 }
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
@@ -1147,10 +1163,10 @@ interface NodeI @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefInterface* ifc_type = (AstTypeDefInterface*)ast.@node_at(m.decls, 0);
+    AstTypeDefInterface* ifc_type = (AstTypeDefInterface*)ast::index(m.decls, 0);
     test::ne(ifc_type, null);
 
     test::eq(ifc_type.type, TokenType.INTERFACE);
@@ -1158,9 +1174,9 @@ interface NodeI @local {
 
     test::eq(ast.@node_join(ifc_type.attributes, contents), "@local");
 
-    test::eq(ast.@node_len(ifc_type.functions), 2);
+    test::eq(ast::len(ifc_type.functions), 2);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(ifc_type.functions, 0);
+    AstCallable* func = (AstCallable*)ast::index(ifc_type.functions, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.FN);
@@ -1168,33 +1184,33 @@ interface NodeI @local {
     test::eq(ast.@node_join(func.name, contents), "foo");
     test::eq(ast.@node_join(func.attributes, contents), "@local");
 
-    test::eq(ast.@node_len(func.params), 3);
+    test::eq(ast::len(func.params), 3);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "ast");
     test::eq(ast.@node_join(param.param_type, contents), "Ast,*");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 1);
+    param = (AstCallableParam*)ast::index(func.params, 1);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "node");
     test::eq(ast.@node_join(param.param_type, contents), "AstNode,*");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 2);
+    param = (AstCallableParam*)ast::index(func.params, 2);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "t");
     test::eq(ast.@node_join(param.param_type, contents), "Token,*");
 
-    func = (AstCallable*)ast.@node_at(ifc_type.functions, 1);
+    func = (AstCallable*)ast::index(ifc_type.functions, 1);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.FN);
-    test::eq(ast.@node_join(func.ftype, contents), `List,(<,int,>)`);
+    test::eq(ast.@node_join(func.ftype, contents), `List,{,int,}`);
     test::eq(ast.@node_join(func.name, contents), "bar");
     test::eq(ast.@node_join(func.attributes, contents), "@local");
 
-    test::eq(ast.@node_len(func.params), 0);
+    test::eq(ast::len(func.params), 0);
 
     io::printf(
         "\n\n``%s``", code[ifc_type.istart .. math::min((isz)ifc_type.iend, (isz)(code.len - 1))]
@@ -1214,7 +1230,7 @@ interface NodeI @local {
     *>
     fn bool foo(Ast* ast, AstNode* node, Token* t) @local;
     <* another doc string *>
-    fn List(<int>) bar() @local;
+    fn List{int} bar() @local;
 }
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
@@ -1223,10 +1239,10 @@ interface NodeI @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefInterface* ifc_type = (AstTypeDefInterface*)ast.@node_at(m.decls, 0);
+    AstTypeDefInterface* ifc_type = (AstTypeDefInterface*)ast::index(m.decls, 0);
     test::ne(ifc_type, null);
 
     test::eq(ifc_type.type, TokenType.INTERFACE);
@@ -1234,9 +1250,9 @@ interface NodeI @local {
 
     test::eq(ast.@node_join(ifc_type.attributes, contents), "@local");
 
-    test::eq(ast.@node_len(ifc_type.functions), 2);
+    test::eq(ast::len(ifc_type.functions), 2);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(ifc_type.functions, 0);
+    AstCallable* func = (AstCallable*)ast::index(ifc_type.functions, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.FN);
@@ -1245,34 +1261,34 @@ interface NodeI @local {
     test::eq(ast.@node_join(func.attributes, contents), "@local");
     test::eq(ast.@node_join(func.docs, contents), "<* Doc string\n");
 
-    test::eq(ast.@node_len(func.params), 3);
+    test::eq(ast::len(func.params), 3);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "ast");
     test::eq(ast.@node_join(param.param_type, contents), "Ast,*");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 1);
+    param = (AstCallableParam*)ast::index(func.params, 1);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "node");
     test::eq(ast.@node_join(param.param_type, contents), "AstNode,*");
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 2);
+    param = (AstCallableParam*)ast::index(func.params, 2);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "t");
     test::eq(ast.@node_join(param.param_type, contents), "Token,*");
 
-    func = (AstCallable*)ast.@node_at(ifc_type.functions, 1);
+    func = (AstCallable*)ast::index(ifc_type.functions, 1);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.FN);
-    test::eq(ast.@node_join(func.ftype, contents), `List,(<,int,>)`);
+    test::eq(ast.@node_join(func.ftype, contents), `List,{,int,}`);
     test::eq(ast.@node_join(func.name, contents), "bar");
     test::eq(ast.@node_join(func.attributes, contents), "@local");
     test::eq(ast.@node_join(func.docs, contents), "<* another doc string ");
 
-    test::eq(ast.@node_len(func.params), 0);
+    test::eq(ast::len(func.params), 0);
 
     io::printf(
         "\n\n``%s``", code[ifc_type.istart .. math::min((isz)ifc_type.iend, (isz)(code.len - 1))]
@@ -1297,10 +1313,10 @@ struct MyStruct @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.STRUCT);
@@ -1309,11 +1325,11 @@ struct MyStruct @local {
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "<* docs ");
 
-    test::eq(ast.@node_len(struct_type.members), 2);
+    test::eq(ast::len(struct_type.members), 2);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "a");
@@ -1321,7 +1337,7 @@ struct MyStruct @local {
     test::eq(ast.@node_join(member.attributes, contents), "");
     test::eq(ast.@node_join(member.docs, contents), "");
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "b");
@@ -1346,7 +1362,7 @@ struct MyStruct @local {
     <* some stuff *>
     int a;
     <* another doc *>
-    List(<MyType>) b;
+    List{MyType} b;
 }
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
@@ -1355,10 +1371,10 @@ struct MyStruct @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.STRUCT);
@@ -1367,11 +1383,11 @@ struct MyStruct @local {
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "<* docs ");
 
-    test::eq(ast.@node_len(struct_type.members), 2);
+    test::eq(ast::len(struct_type.members), 2);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "a");
@@ -1379,11 +1395,11 @@ struct MyStruct @local {
     test::eq(ast.@node_join(member.attributes, contents), "");
     test::eq(ast.@node_join(member.docs, contents), "<* some stuff ");
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "b");
-    test::eq(ast.@node_join(member.ftype, contents), "List,(<,MyType,>)");
+    test::eq(ast.@node_join(member.ftype, contents), "List,{,MyType,}");
     test::eq(ast.@node_join(member.attributes, contents), "");
     test::eq(ast.@node_join(member.docs, contents), "<* another doc ");
 
@@ -1414,10 +1430,10 @@ struct MyStruct @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.STRUCT);
@@ -1426,12 +1442,12 @@ struct MyStruct @local {
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "");
 
-    test::eq(ast.@node_len(struct_type.members), 2);
+    test::eq(ast::len(struct_type.members), 2);
     // test::eq(ast.@node_join(struct_type.members, contents), ``);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.STRUCT);
     test::eq(member.value, "my_sub");
@@ -1439,10 +1455,10 @@ struct MyStruct @local {
 
     test::eq(ast.@node_join(member.attributes, contents), "@test");
     test::eq(ast.@node_join(member.docs, contents), ``);
-    test::eq(ast.@node_len(member.members), 3);
+    test::eq(ast::len(member.members), 3);
     test::eq(ast.@node_join(member.members, contents), `x,y,z`);
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "b");
@@ -1450,7 +1466,7 @@ struct MyStruct @local {
 
     test::eq(ast.@node_join(member.attributes, contents), "@test");
     test::eq(ast.@node_join(member.docs, contents), ``);
-    test::eq(ast.@node_len(member.members), 0);
+    test::eq(ast::len(member.members), 0);
 
     io::printf(
         "\n\n``%s``",
@@ -1484,10 +1500,10 @@ struct MyStruct @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.STRUCT);
@@ -1496,12 +1512,12 @@ struct MyStruct @local {
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "<*doc1");
 
-    test::eq(ast.@node_len(struct_type.members), 2);
+    test::eq(ast::len(struct_type.members), 2);
     // test::eq(ast.@node_join(struct_type.members, contents), ``);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.STRUCT);
     test::eq(member.value, "my_sub");
@@ -1509,10 +1525,10 @@ struct MyStruct @local {
 
     test::eq(ast.@node_join(member.attributes, contents), "@test");
     test::eq(ast.@node_join(member.docs, contents), `<*doc2`);
-    test::eq(ast.@node_len(member.members), 3);
+    test::eq(ast::len(member.members), 3);
     test::eq(ast.@node_join(member.members, contents), `x,y,z`);
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "b");
@@ -1520,7 +1536,7 @@ struct MyStruct @local {
 
     test::eq(ast.@node_join(member.attributes, contents), "@test");
     test::eq(ast.@node_join(member.docs, contents), `<*doc4`);
-    test::eq(ast.@node_len(member.members), 0);
+    test::eq(ast::len(member.members), 0);
 
     io::printf(
         "\n\n``%s``",
@@ -1552,10 +1568,10 @@ struct MyStruct @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.STRUCT);
@@ -1564,57 +1580,57 @@ struct MyStruct @local {
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "");
 
-    test::eq(ast.@node_len(struct_type.members), 2);
+    test::eq(ast::len(struct_type.members), 2);
     test::eq(ast.@node_join(struct_type.members, contents), `my_sub,b`);
 
     AstTypeDefStructural* field1, field2;
 
-    field1 = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    field1 = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(field1, null);
     test::eq(field1.type, TokenType.STRUCT);
     test::eq(field1.value, "my_sub");
     test::eq(ast.@node_join(field1.ftype, contents), ``);
     test::eq(ast.@node_join(field1.members, contents), `x,my_sub_2,f`);
-    test::eq(ast.@node_len(field1.members), 3);
+    test::eq(ast::len(field1.members), 3);
 
     test::eq(ast.@node_join(field1.attributes, contents), "@test");
     test::eq(ast.@node_join(field1.docs, contents), ``);
 
     // my_sub field x
-    field2 = (AstTypeDefStructural*)ast.@node_at(field1.members, 0);
+    field2 = (AstTypeDefStructural*)ast::index(field1.members, 0);
     test::ne(field2, null);
     test::eq(field2.type, TokenType.TYPE_IDENT);
     test::eq(field2.value, "x");
     test::eq(ast.@node_join(field2.ftype, contents), `int`);
     test::eq(ast.@node_join(field2.members, contents), ``);
-    test::eq(ast.@node_len(field2.members), 0);
+    test::eq(ast::len(field2.members), 0);
     test::eq(ast.@node_join(field2.attributes, contents), "");
     test::eq(ast.@node_join(field2.docs, contents), ``);
 
     // my_sub field my_sub_2
-    field2 = (AstTypeDefStructural*)ast.@node_at(field1.members, 1);
+    field2 = (AstTypeDefStructural*)ast::index(field1.members, 1);
     test::ne(field2, null);
     test::eq(field2.type, TokenType.STRUCT);
     test::eq(field2.value, "my_sub_2");
     test::eq(ast.@node_join(field2.ftype, contents), ``);
     test::eq(ast.@node_join(field2.members, contents), `y,z`);
-    test::eq(ast.@node_len(field2.members), 2);
+    test::eq(ast::len(field2.members), 2);
     test::eq(ast.@node_join(field2.attributes, contents), "@foo");
     test::eq(ast.@node_join(field2.docs, contents), ``);
 
     // my_sub field x
-    field2 = (AstTypeDefStructural*)ast.@node_at(field1.members, 2);
+    field2 = (AstTypeDefStructural*)ast::index(field1.members, 2);
     test::ne(field2, null);
     test::eq(field2.type, TokenType.TYPE_IDENT);
     test::eq(field2.value, "f");
     test::eq(ast.@node_join(field2.ftype, contents), `int`);
     test::eq(ast.@node_join(field2.members, contents), ``);
-    test::eq(ast.@node_len(field2.members), 0);
+    test::eq(ast::len(field2.members), 0);
     test::eq(ast.@node_join(field2.attributes, contents), "");
     test::eq(ast.@node_join(field2.docs, contents), ``);
 
     // Main struct second field
-    field2 = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    field2 = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(field2, null);
     test::eq(field2.type, TokenType.TYPE_IDENT);
     test::eq(field2.value, "b");
@@ -1622,7 +1638,7 @@ struct MyStruct @local {
 
     test::eq(ast.@node_join(field2.attributes, contents), "@test");
     test::eq(ast.@node_join(field2.docs, contents), ``);
-    test::eq(ast.@node_len(field2.members), 0);
+    test::eq(ast::len(field2.members), 0);
 
     io::printf(
         "\n\n``%s``",
@@ -1652,10 +1668,10 @@ struct MyStruct @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.STRUCT);
@@ -1664,12 +1680,12 @@ struct MyStruct @local {
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "");
 
-    test::eq(ast.@node_len(struct_type.members), 2);
+    test::eq(ast::len(struct_type.members), 2);
     test::eq(ast.@node_join(struct_type.members, contents), `,b`);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.STRUCT);
     test::eq(member.value, "");
@@ -1677,10 +1693,10 @@ struct MyStruct @local {
 
     test::eq(ast.@node_join(member.attributes, contents), "@test");
     test::eq(ast.@node_join(member.docs, contents), ``);
-    test::eq(ast.@node_len(member.members), 3);
+    test::eq(ast::len(member.members), 3);
     test::eq(ast.@node_join(member.members, contents), `x,y,z`);
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "b");
@@ -1688,7 +1704,7 @@ struct MyStruct @local {
 
     test::eq(ast.@node_join(member.attributes, contents), "@test");
     test::eq(ast.@node_join(member.docs, contents), ``);
-    test::eq(ast.@node_len(member.members), 0);
+    test::eq(ast::len(member.members), 0);
 
     io::printf(
         "\n\n``%s``",
@@ -1705,7 +1721,7 @@ fn void test_struct_inline()
     String code = `module test::std::c3lang::ast;
 struct MyStruct @local {
     <*inline doc*>
-    inline List(<int>) base @test;
+    inline List{int} base @test;
     int b @test;
 }
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
@@ -1715,10 +1731,10 @@ struct MyStruct @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.STRUCT);
@@ -1727,23 +1743,23 @@ struct MyStruct @local {
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "");
 
-    test::eq(ast.@node_len(struct_type.members), 2);
+    test::eq(ast::len(struct_type.members), 2);
     test::eq(ast.@node_join(struct_type.members, contents), `base,b`);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.INLINE);
     test::eq(member.value, "base");
-    test::eq(ast.@node_join(member.ftype, contents), `List,(<,int,>)`);
+    test::eq(ast.@node_join(member.ftype, contents), `List,{,int,}`);
 
     test::eq(ast.@node_join(member.attributes, contents), "@test");
     test::eq(ast.@node_join(member.docs, contents), `<*inline doc`);
-    test::eq(ast.@node_len(member.members), 0);
+    test::eq(ast::len(member.members), 0);
     test::eq(ast.@node_join(member.members, contents), ``);
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "b");
@@ -1751,7 +1767,7 @@ struct MyStruct @local {
 
     test::eq(ast.@node_join(member.attributes, contents), "@test");
     test::eq(ast.@node_join(member.docs, contents), ``);
-    test::eq(ast.@node_len(member.members), 0);
+    test::eq(ast::len(member.members), 0);
 
     io::printf(
         "\n\n``%s``",
@@ -1777,10 +1793,10 @@ union MyUnion @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.UNION);
@@ -1789,11 +1805,11 @@ union MyUnion @local {
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "");
 
-    test::eq(ast.@node_len(struct_type.members), 2);
+    test::eq(ast::len(struct_type.members), 2);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "a");
@@ -1801,7 +1817,7 @@ union MyUnion @local {
     test::eq(ast.@node_join(member.attributes, contents), "");
     test::eq(ast.@node_join(member.docs, contents), "");
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "b");
@@ -1838,10 +1854,10 @@ struct MyUnion @local {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.STRUCT);
@@ -1850,11 +1866,11 @@ struct MyUnion @local {
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "");
 
-    test::eq(ast.@node_len(struct_type.members), 2);
+    test::eq(ast::len(struct_type.members), 2);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.UNION);
     test::eq(member.value, "");
@@ -1862,7 +1878,7 @@ struct MyUnion @local {
     test::eq(ast.@node_join(member.attributes, contents), "");
     test::eq(ast.@node_join(member.docs, contents), "");
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(member, null);
     test::eq(member.type, TokenType.UNION);
     test::eq(member.value, "foo");
@@ -1896,10 +1912,10 @@ bitstruct MyBit @local : char
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.BITSTRUCT);
@@ -1908,11 +1924,11 @@ bitstruct MyBit @local : char
     test::eq(ast.@node_join(struct_type.attributes, contents), "@local");
     test::eq(ast.@node_join(struct_type.docs, contents), "");
 
-    test::eq(ast.@node_len(struct_type.members), 3);
+    test::eq(ast::len(struct_type.members), 3);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "a");
@@ -1920,7 +1936,7 @@ bitstruct MyBit @local : char
     test::eq(ast.@node_join(member.attributes, contents), "");
     test::eq(ast.@node_join(member.docs, contents), "");
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 1);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 1);
     test::ne(member, null);
     test::eq(member.type, TokenType.TYPE_IDENT);
     test::eq(member.value, "b");
@@ -1955,10 +1971,10 @@ struct MyBit {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.STRUCT);
@@ -1967,11 +1983,11 @@ struct MyBit {
     test::eq(ast.@node_join(struct_type.attributes, contents), "");
     test::eq(ast.@node_join(struct_type.docs, contents), "");
 
-    test::eq(ast.@node_len(struct_type.members), 1);
+    test::eq(ast::len(struct_type.members), 1);
 
     AstTypeDefStructural* member;
 
-    member = (AstTypeDefStructural*)ast.@node_at(struct_type.members, 0);
+    member = (AstTypeDefStructural*)ast::index(struct_type.members, 0);
     test::ne(member, null);
     test::eq(member.type, TokenType.BITSTRUCT);
     test::eq(member.value, "my_bit");
@@ -2001,10 +2017,10 @@ def Int32 = int;
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.DEF);
@@ -2035,10 +2051,10 @@ def MY_CONST = int;
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.DEF);
@@ -2069,10 +2085,10 @@ def @Int32 = { @foo @bar };
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.DEF);
@@ -2095,7 +2111,7 @@ fn void test_def_inline_list()
 {
     String code = `module test::std::c3lang::ast;
 <*def doc*>
-def IntList32 @test @foo = inline List(<int>);
+def IntList32 @test @foo = inline List{int};
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
     Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
@@ -2103,10 +2119,10 @@ def IntList32 @test @foo = inline List(<int>);
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.DEF);
@@ -2115,7 +2131,7 @@ def IntList32 @test @foo = inline List(<int>);
     test::eq(ast.@node_join(struct_type.attributes, contents), "@test,@foo");
     test::eq(ast.@node_join(struct_type.docs, contents), "<*def doc");
     // NOTE: inline expected to be excluded from type fields
-    test::eq(ast.@node_join(struct_type.ftype, contents), "List,(<,int,>)");
+    test::eq(ast.@node_join(struct_type.ftype, contents), "List,{,int,}");
 
     io::printf(
         "\n\n``%s``",
@@ -2138,10 +2154,10 @@ distinct Int32 = int;
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.DISTINCT);
@@ -2172,10 +2188,10 @@ const Int32 A_FOO_BAR = 123;
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.CONST);
@@ -2206,10 +2222,10 @@ def NodeParser = fn bool (Ast* ast, AstNode* node, Token* t, NodeParserState* st
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast.@node_at(m.decls, 0);
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)ast::index(m.decls, 0);
     test::ne(struct_type, null);
 
     test::eq(struct_type.type, TokenType.DEF);
@@ -2245,24 +2261,24 @@ fn void test_module_imports_comma_sep()
     defer mem::free(ast.allocator);
     contents.clear();
 
-    test::eq(ast.@node_len(ast.modules), 1);
+    test::eq(ast::len(ast.modules), 1);
     test::eq(ast.@node_join(ast.modules, contents, ","), "test::std::c3lang::ast");
 
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::eq(ast.@node_join(m.name, contents, "::"), "test::std::c3lang::ast");
     test::eq(m.attributes, null);
 
     test::ne(m.imports, null);
-    test::eq(ast.@node_len(m.imports), 2);
+    test::eq(ast::len(m.imports), 2);
     AstImport* imp;
 
-    imp = ast.@node_at(m.imports, 0);
+    imp = ast::index(m.imports, 0);
     test::eq(imp.type, TokenType.IMPORT);
     test::eq(imp.value, "import");
     test::eq(ast.@node_join(imp.name, contents, "::"), "std::io");
     test::eq(ast.@node_join(imp.attributes, contents), "@test");
 
-    imp = ast.@node_at(m.imports, 1);
+    imp = ast::index(m.imports, 1);
     test::eq(imp.type, TokenType.IMPORT);
     test::eq(imp.value, "import");
     test::eq(ast.@node_join(imp.name, contents, "::"), "test::math");
@@ -2290,10 +2306,10 @@ macro fetch_add(ptr, y, AtomicOrdering $ordering = SEQ_CONSISTENT, bool $volatil
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.MACRO);
@@ -2327,10 +2343,10 @@ macro MyType.fetch_add(ptr, y, AtomicOrdering $ordering = SEQ_CONSISTENT, bool $
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.MACRO);
@@ -2364,10 +2380,10 @@ fn MyType* MyFoo.test_node(&self) {
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstCallable* func = (AstCallable*)ast.@node_at(m.decls, 0);
+    AstCallable* func = (AstCallable*)ast::index(m.decls, 0);
     test::ne(func, null);
 
     test::eq(func.type, TokenType.FN);
@@ -2375,10 +2391,10 @@ fn MyType* MyFoo.test_node(&self) {
     test::eq(ast.@node_join(func.name, contents), "MyFoo,test_node");
     test::eq(ast.@node_join(func.ftype, contents), "MyType,*");
 
-    test::eq(ast.@node_len(func.params), 1);
+    test::eq(ast::len(func.params), 1);
     AstCallableParam* param;
 
-    param = (AstCallableParam*)ast.@node_at(func.params, 0);
+    param = (AstCallableParam*)ast::index(func.params, 0);
     test::eq(param.type, TokenType.VAR);
     test::eq(param.value, "self");
     // test::eq(param.param_type, null);
@@ -2402,10 +2418,10 @@ int global_int @local @bar("foo") = 2;
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDef* var_type = (AstTypeDef*)ast.@node_at(m.decls, 0);
+    AstTypeDef* var_type = (AstTypeDef*)ast::index(m.decls, 0);
     test::ne(var_type, null);
 
     test::eq(var_type.type, TokenType.TYPE_IDENT);
@@ -2436,10 +2452,10 @@ tlocal int global_int @local @bar("foo") = 2;
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDef* var_type = (AstTypeDef*)ast.@node_at(m.decls, 0);
+    AstTypeDef* var_type = (AstTypeDef*)ast::index(m.decls, 0);
     test::ne(var_type, null);
 
     test::eq(var_type.type, TokenType.TYPE_IDENT);
@@ -2470,10 +2486,10 @@ MyType global_int @local @bar("foo");
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDef* var_type = (AstTypeDef*)ast.@node_at(m.decls, 0);
+    AstTypeDef* var_type = (AstTypeDef*)ast::index(m.decls, 0);
     test::ne(var_type, null);
 
     test::eq(var_type.type, TokenType.TYPE_IDENT);
@@ -2504,10 +2520,10 @@ char[10] global_int @local @bar("foo");
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
+    AstModule* m = ast::index(ast.modules, 0);
     test::ne(m, null);
 
-    AstTypeDef* var_type = (AstTypeDef*)ast.@node_at(m.decls, 0);
+    AstTypeDef* var_type = (AstTypeDef*)ast::index(m.decls, 0);
     test::ne(var_type, null);
 
     test::eq(var_type.type, TokenType.TYPE_IDENT);
@@ -2530,18 +2546,24 @@ fn void test_module_variable_generic()
 {
     String code = `module test::std::c3lang::ast;
 <*def doc*>
-List(<MyType>) global_int @local @bar("foo");
+List{MyType} global_int @local @bar("foo");
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
-    Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
+	
+    Ast ast = ast::parse(
+		contents: contents.str_view(), 
+		file_path: "foo.c3", 
+		print_lex: true,
+	);
+	
     defer mem::free(ast.allocator);
     contents.clear();
 
     test::ne(ast.modules, null);
-    AstModule* m = ast.@node_at(ast.modules, 0);
-    test::ne(m, null);
+	AstModule* m = ast::index(ast.modules, 0);
+	test::ne(m, null);
 
-    AstTypeDef* var_type = (AstTypeDef*)ast.@node_at(m.decls, 0);
+    AstTypeDef* var_type = (AstTypeDef*)ast::index(m.decls, 0);
     test::ne(var_type, null);
 
     test::eq(var_type.type, TokenType.TYPE_IDENT);
@@ -2549,7 +2571,7 @@ List(<MyType>) global_int @local @bar("foo");
 
     test::eq(ast.@node_join(var_type.attributes, contents), `@local,@bar("foo")`);
     test::eq(ast.@node_join(var_type.docs, contents), "<*def doc");
-    test::eq(ast.@node_join(var_type.ftype, contents), "List,(<,MyType,>)");
+    test::eq(ast.@node_join(var_type.ftype, contents), "List,{,MyType,}");
 
     io::printf(
         "\n\n``%s``",
@@ -2583,14 +2605,15 @@ fn void test6(int a) => a * 2;
     contents.clear();
 
     test::ne(ast.modules, null);
-    test::eq(3, ast.@node_len(ast.modules));
+	test::eq(3, ast::len(ast.modules));
 
-    AstModule* m = ast.@node_at(ast.modules, 0);
+
+    AstModule* m = ast::index(ast.modules, 0);
     test::eq(m.hash, (Fnv32a)fnv32a::hash("test::std::c3lang::ast"));
 
-    m = ast.@node_at(ast.modules, 1);
+    m = ast::index(ast.modules, 1);
     test::eq(m.hash, (Fnv32a)fnv32a::hash("test::std::c3lang::best"));
 
-    m = ast.@node_at(ast.modules, 2);
+    m = ast::index(ast.modules, 2);
     test::eq(m.hash, (Fnv32a)fnv32a::hash("test::std::c3lang::cest"));
 }
