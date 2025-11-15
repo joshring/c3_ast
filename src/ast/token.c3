@@ -54,7 +54,7 @@ enum TokenType : uint
     IMPLIES,  // =>
     LESS_EQ,  // <=
     LBRAPIPE,  // {|
-    LGENPAR,  // (<
+    // LGENPAR,  // (<  removed
     LVEC,  // [<
     MINUS_ASSIGN,  // -=
     MINUSMINUS,  // --
@@ -65,7 +65,7 @@ enum TokenType : uint
     PLUS_ASSIGN,  // +=
     PLUSPLUS,  // ++
     RBRAPIPE,  // |}
-    RGENPAR,  // >)
+    // RGENPAR,  // >)  removed
     RVEC,  // >]
     QUESTQUEST,  // ??
     SCOPE,  // ::
@@ -449,8 +449,8 @@ fn String token_type_to_string(TokenType type)
             return "<=";
         case LBRAPIPE:
             return "{|";
-        case LGENPAR:
-            return "(<";
+        // case LGENPAR:
+        //     return "(<";
         case LVEC:
             return "[<";
         case MINUS_ASSIGN:
@@ -473,8 +473,8 @@ fn String token_type_to_string(TokenType type)
             return "??";
         case RBRAPIPE:
             return "|}";
-        case RGENPAR:
-            return ">)";
+        // case RGENPAR:
+        //     return ">)";
         case RVEC:
             return ">]";
         case SCOPE:

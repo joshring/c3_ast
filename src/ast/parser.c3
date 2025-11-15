@@ -1,5 +1,7 @@
 module ast;
 
+import ast::node;
+
 import std::io;
 import ast::lexer;
 
@@ -19,13 +21,13 @@ macro TokenType NodeParserState.prev_scope(&self, usz offset)
 macro NodeParserState.check_scope(&self, TokenType t)
 {
 
+    // case LGENPAR:  // (<
     switch (t) 
 	{
         case LBRACE:  // {
         case LBRACKET:  // [
         case LPAREN:  // (
         case LBRAPIPE:  // {|
-        case LGENPAR:  // (<
         case LVEC:  // [<
         case DOCS_START:  // <*
             if (self.scope_depth >= self.scope_stack.len) return;
@@ -55,9 +57,9 @@ macro NodeParserState.check_scope(&self, TokenType t)
         case RBRAPIPE:  // |}
             if (self.scope_depth == 0) nextcase default;
             if (self.scope_stack[self.scope_depth - 1] == LBRAPIPE) nextcase EOF;
-        case RGENPAR:  // >)
-            if (self.scope_depth == 0) nextcase default;
-            if (self.scope_stack[self.scope_depth - 1] == LGENPAR) nextcase EOF;
+        // case RGENPAR:  // >)
+        //     if (self.scope_depth == 0) nextcase default;
+        //     if (self.scope_stack[self.scope_depth - 1] == LGENPAR) nextcase EOF;
         case RVEC:  // >)
             if (self.scope_depth == 0) nextcase default;
             if (self.scope_stack[self.scope_depth - 1] == LVEC) nextcase EOF;
@@ -102,7 +104,7 @@ fn bool Ast.parse_module(&ast, AstNode* node, Token* t, NodeParserState* state)
             switch (t.type) 
 			{
                 case IDENT:
-                    ast.@allc_add(AstNode, &m.name, t);
+                    node::append_alloc(AstNode, &m.name, t);
                 case SCOPE:
                     break;  // skipping ::
                 case AT_IDENT:
@@ -116,7 +118,7 @@ fn bool Ast.parse_module(&ast, AstNode* node, Token* t, NodeParserState* state)
 			{
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    ast.@allc_add(AstNode, &m.attributes, t);
+                    node::append_alloc(AstNode, &m.attributes, t);
                 case EOS:
                     nextcase STATE: state.transition(t.type);
                 default:
@@ -137,7 +139,7 @@ fn bool Ast.parse_module(&ast, AstNode* node, Token* t, NodeParserState* state)
 fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
 {
     assert(node.type == IMPORT);
-    AstImport* imp = (AstImport*)ast::@node_last(node);
+    AstImport* imp = (AstImport*)node::last(node);
 
     switch STATE: (state.check(t)) 
 	{
@@ -151,13 +153,13 @@ fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
                 .col = t.col,
                 .offset = t.offset,
             };
-            ast.@allc_add(AstImport, &imp.next, &ptok);
+            node::append_alloc(AstImport, &imp.next, &ptok);
             state.transition(IDENT);
         case IDENT:
             switch (t.type) 
 			{
                 case IDENT:
-                    ast.@allc_add(AstNode, &imp.name, t);
+                    node::append_alloc(AstNode, &imp.name, t);
                 case SCOPE:
                     break;  // skipping ::
                 case AT_IDENT:
@@ -173,7 +175,7 @@ fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
 			{
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    ast.@allc_add(AstNode, &imp.attributes, t);
+                    node::append_alloc(AstNode, &imp.attributes, t);
                 case EOS:
                     nextcase STATE: state.transition(EOS);
                 case COMMA:
@@ -192,7 +194,12 @@ fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
     return false;
 }
 
-macro parse_callable_params(Ast* ast, Token* t, AstCallable* node_func, NodeParserState* state) 
+macro parse_callable_params(
+	Ast* ast, 
+	Token* t, 
+	AstCallable* node_func, 
+	NodeParserState* state,
+) 
 {
     AstCallableParam* current_param = state.sub_node ? (AstCallableParam*)state.sub_node : null;
 
@@ -208,7 +215,7 @@ macro parse_callable_params(Ast* ast, Token* t, AstCallable* node_func, NodePars
 			{
                 // Next parameter definition
                 assert(current_param.type == TokenType.VAR);
-                current_param = (AstCallableParam*)ast.@allc_add(
+                current_param = (AstCallableParam*)node::append_alloc(
                     AstCallableParam,
                     &node_func.params,
                     &ast.lexer.token
@@ -249,7 +256,7 @@ macro parse_callable_params(Ast* ast, Token* t, AstCallable* node_func, NodePars
         case CT_IDENT:
             if (state.sub_node == null) 
 			{
-                current_param = (AstCallableParam*)ast.@allc_add(
+                current_param = (AstCallableParam*)node::append_alloc(
                     AstCallableParam,
                     &node_func.params,
                     &ast.lexer.token
@@ -271,9 +278,9 @@ macro parse_callable_params(Ast* ast, Token* t, AstCallable* node_func, NodePars
                         .col = t.col,
                         .offset = t.offset,
                     };
-                    ast.@allc_add(AstNode, &current_param.param_type, &ptok);
+                    node::append_alloc(AstNode, &current_param.param_type, &ptok);
                 }
-                current_param.value = ast.@allc_str(t.value);
+                current_param.value = t.value.tcopy();
             } 
 			else 
 			{
@@ -285,19 +292,19 @@ macro parse_callable_params(Ast* ast, Token* t, AstCallable* node_func, NodePars
                 if (current_param.value) 
 				{
                     ast.lexer.extend_current_attribute();
-                    ast.@allc_add(AstNode, &current_param.attributes, t);
+                    node::append_alloc(AstNode, &current_param.attributes, t);
                 } 
 				else 
 				{
                     // macro @for_each(list; @body(it))
-                    current_param.value = ast.@allc_str(t.value);
+                    current_param.value = t.value.tcopy();
                 }
             }
         default:
             // all other goes to type
             if (current_param) 
 			{
-                ast.@allc_add(AstNode, &current_param.param_type, t);
+                node::append_alloc(AstNode, &current_param.param_type, t);
             }
     }
 }
@@ -351,7 +358,7 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
                         nextcase default;
                     }
                 default:
-                    ast.@allc_add(AstNode, &node_func.ftype, t);
+                    node::append_alloc(AstNode, &node_func.ftype, t);
             }
         case IDENT:
             // function name
@@ -361,12 +368,12 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
                 case IDENT:
                 case TYPE_IDENT:
                     // struct based functions may contain TypeName.func_name
-                    ast.@allc_add(AstNode, &node_func.name, t);
+                    node::append_alloc(AstNode, &node_func.name, t);
                 case LPAREN:
                     if (state.scope_depth == 1) 
 					{
                         DString fname = dstring::temp();
-                        node_func.value = ast.@allc_str(ast.@node_join(node_func.name, fname, "."));
+                        node_func.value = node::to_string(node_func.name, fname, ".").tcopy();
                         nextcase STATE: state.transition(VAR);
                     }
                 default:
@@ -381,7 +388,7 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
 			{
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    ast.@allc_add(AstNode, &node_func.attributes, t);
+                    node::append_alloc(AstNode, &node_func.attributes, t);
                 case IMPLIES:  // =>
                     nextcase STATE: state.transition(IMPLIES);
                 case LBRACE:  // {
@@ -449,7 +456,7 @@ fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* stat
                     if (state.sub_node == null) 
 					{
                         // add new contract, otherwise malformed contract or something
-                        state.sub_node = ast.@allc_add(
+                        state.sub_node = node::append_alloc(
                             AstDocContract, &doc.contracts, &ast.lexer.token
                         );
                     }
@@ -465,12 +472,12 @@ fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* stat
                         // excluding [&inout] shit
                         if (state.scope_depth == 1 && t.type != RBRACKET) 
 						{
-                            ast.@allc_add(AstNode, &contract.items, &ast.lexer.token);
+                            node::append_alloc(AstNode, &contract.items, &ast.lexer.token);
                         }
                     } 
 					else 
 					{
-                        ast.@allc_add(AstNode, &contract.items, &ast.lexer.token);
+                        node::append_alloc(AstNode, &contract.items, &ast.lexer.token);
                     }
                     break;
             }
@@ -499,7 +506,7 @@ fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* sta
             switch (t.type) 
 			{
                 case TYPE_IDENT:
-                    if (!node_enum.value) node_enum.value = ast.@allc_str(t.value);
+                    if (!node_enum.value) node_enum.value = t.value.tcopy();
                 case LBRACE:
                     if (state.scope_depth == 1) nextcase STATE: state.transition(SCOPE);
                 case AT_IDENT:
@@ -514,7 +521,7 @@ fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* sta
                     if (state.scope_depth == 0) 
 					{
                         ast.lexer.extend_current_attribute();
-                        ast.@allc_add(AstNode, &node_enum.attributes, t);
+                        node::append_alloc(AstNode, &node_enum.attributes, t);
                     }
                 case LBRACE:  // {
                     if (state.scope_depth == 1) nextcase STATE: state.transition(SCOPE);
@@ -531,7 +538,7 @@ fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* sta
                 case CONST_IDENT:
                     if (state.scope_depth == 1 && !state.sub_node) 
 					{
-                        state.sub_node = ast.@allc_add(
+                        state.sub_node = node::append_alloc(
                             AstNode, &node_enum.values, &ast.lexer.token
                         );
                     }
@@ -567,12 +574,12 @@ fn bool Ast.parse_interface(&ast, AstNode* node, Token* t, NodeParserState* stat
             switch (t.type) 
 			{
                 case TYPE_IDENT:
-                    if (!node_ifc.value) node_ifc.value = ast.@allc_str(t.value);
+                    if (!node_ifc.value) node_ifc.value = t.value.tcopy();
                 case AT_IDENT:
                     if (state.scope_depth == 0) 
 					{
                         ast.lexer.extend_current_attribute();
-                        ast.@allc_add(AstNode, &node_ifc.attributes, t);
+                        node::append_alloc(AstNode, &node_ifc.attributes, t);
                     }
                 case LBRACE:
                     if (state.scope_depth == 1) nextcase STATE: state.transition(SCOPE);
@@ -589,7 +596,7 @@ fn bool Ast.parse_interface(&ast, AstNode* node, Token* t, NodeParserState* stat
                 case DOCS_START:
                     if (state.scope_depth == 2 && !state.sub_node) 
 					{
-                        ast.@allc_add(AstDoc, &state.sub_node, &ast.lexer.token);
+                        node::append_alloc(AstDoc, &state.sub_node, &ast.lexer.token);
                         ast.state_stack.push((NodeParserState){});
                         assert(state.sub_node.type == TokenType.DOCS_START);
                         ast.parse_docstring(state.sub_node, &ast.lexer.token, &ast.state_stack[1]);
@@ -600,7 +607,7 @@ fn bool Ast.parse_interface(&ast, AstNode* node, Token* t, NodeParserState* stat
 					{
                         assert(!state.sub_node || state.sub_node.type == DOCS_START);
 
-                        AstCallable* f = (AstCallable*)ast.@allc_add(
+                        AstCallable* f = (AstCallable*)node::append_alloc(
                             AstCallable,
                             &node_ifc.functions,
                             &ast.lexer.token
@@ -668,18 +675,18 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
             switch (t.type)
 			{
                 case TYPE_IDENT:
-                    if (!node_struct.value) node_struct.value = ast.@allc_str(t.value);
+                    if (!node_struct.value) node_struct.value = t.value.tcopy();
                 case IDENT:
                     if (ast.state_stack.len() > 1) 
 					{
                         // sub-structs have IDENT instead of TYPE_IDENT!
-                        if (!node_struct.value) node_struct.value = ast.@allc_str(t.value);
+                        if (!node_struct.value) node_struct.value = t.value.tcopy();
                     }
                 case AT_IDENT:
                     if (state.scope_depth == 0) 
 					{
                         ast.lexer.extend_current_attribute();
-                        ast.@allc_add(AstNode, &node_struct.attributes, t);
+                        node::append_alloc(AstNode, &node_struct.attributes, t);
                     }
                 case LBRACE:
                     if (state.scope_depth == 1) nextcase STATE: state.transition(SCOPE);
@@ -691,7 +698,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
 			{
                 case DOCS_START:
                     assert(state.sub_node == null);
-                    ast.@allc_add(AstDoc, &state.sub_node, &ast.lexer.token);
+                    node::append_alloc(AstDoc, &state.sub_node, &ast.lexer.token);
                     nextcase default;
                 case DOCS_END:
                     nextcase STATE: state.transition(SCOPE);
@@ -735,26 +742,26 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                     if (state.sub_node == null || state.sub_node.type == DOCS_START) 
 					{
                         // new field, state enter
-                        s = (AstTypeDefStructural*)ast.@allc_add(
+                        s = (AstTypeDefStructural*)node::append_alloc(
                             AstTypeDefStructural,
                             &node_struct.members,
                             &ast.lexer.token
                         );
 
                         s.docs = (AstDoc*)state.sub_node;
-                        if (t.type == TYPE_IDENT) ast.@allc_add(AstNode, &s.ftype, t);
+                        if (t.type == TYPE_IDENT) node::append_alloc(AstNode, &s.ftype, t);
                         s.value = "";
                         state.sub_node = s;
                     } 
 					else 
 					{
-                        // Adding to existing type field (e.g. generic List(<MyType>) )
-                        ast.@allc_add(AstNode, &s.ftype, t);
+                        // Adding to existing type field (e.g. generic List{MyType} )
+                        node::append_alloc(AstNode, &s.ftype, t);
                     }
                 case IDENT:
                     assert(state.sub_node);
                     if (state.scope_depth != 1) break;
-                    state.sub_node.value = ast.@allc_str(t.value);
+                    state.sub_node.value = t.value.tcopy();
 
                 case AT_IDENT:  // member level attributes
                     assert(state.sub_node);
@@ -769,7 +776,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                         case BITSTRUCT:
                             AstTypeDef* _type = (AstTypeDef*)state.sub_node;
                             ast.lexer.extend_current_attribute();
-                            ast.@allc_add(AstNode, &_type.attributes, t);
+                            node::append_alloc(AstNode, &_type.attributes, t);
                         default:
                             break;
                     }
@@ -780,7 +787,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                 default:
                     assert(state.sub_node);
                     AstTypeDefStructural* s = (AstTypeDefStructural*)state.sub_node;
-                    ast.@allc_add(AstNode, &s.ftype, t);
+                    node::append_alloc(AstNode, &s.ftype, t);
                     break;
             }
         case FOREACH:  // parsing sub structs
@@ -792,7 +799,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                     if (state.sub_node == null || state.sub_node.type == DOCS_START) 
 					{
                         // adding only when where are no pending FOREACH parsers
-                        AstTypeDefStructural* s = (AstTypeDefStructural*)ast.@allc_add(
+                        AstTypeDefStructural* s = (AstTypeDefStructural*)node::append_alloc(
                             AstTypeDefStructural,
                             &node_struct.members,
                             &ast.lexer.token
@@ -845,17 +852,17 @@ fn bool Ast.parse_global_var(&ast, AstNode* node, Token* t, NodeParserState* sta
                     node_typedef.type = TYPE_IDENT;
                     break;
                 case IDENT:
-                    if (!node_typedef.value) node_typedef.value = ast.@allc_str(t.value);
+                    if (!node_typedef.value) node_typedef.value = t.value.tcopy();
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    ast.@allc_add(AstNode, &node_typedef.attributes, t);
+                    node::append_alloc(AstNode, &node_typedef.attributes, t);
                 case EQ:
                     nextcase STATE: state.transition(EQ);
                 case EOS:
                     nextcase STATE: state.transition(EOF);
                 case TYPE_IDENT:
                 default:
-                    ast.@allc_add(AstNode, &node_typedef.ftype, t);
+                    node::append_alloc(AstNode, &node_typedef.ftype, t);
                     break;
             }
         case EQ:
@@ -895,10 +902,10 @@ fn bool Ast.parse_typedef(&ast, AstNode* node, Token* t, NodeParserState* state)
                 case TYPE_IDENT:
                 case IDENT:
                 case CONST_IDENT:
-                    if (!node_typedef.value) node_typedef.value = ast.@allc_str(t.value);
+                    if (!node_typedef.value) node_typedef.value = t.value.tcopy();
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    ast.@allc_add(AstNode, &node_typedef.attributes, t);
+                    node::append_alloc(AstNode, &node_typedef.attributes, t);
                 case EQ:
                     nextcase STATE: state.transition(TYPE_IDENT);
                 case EOS:
@@ -915,7 +922,7 @@ fn bool Ast.parse_typedef(&ast, AstNode* node, Token* t, NodeParserState* state)
                 case EOS:
                     nextcase STATE: state.transition(EOF);
                 default:
-                    ast.@allc_add(AstNode, &node_typedef.ftype, t);
+                    node::append_alloc(AstNode, &node_typedef.ftype, t);
             }
 
         case EOF:
@@ -943,12 +950,12 @@ fn bool Ast.parse_constants(&ast, AstNode* node, Token* t, NodeParserState* stat
             switch (t.type) 
 			{
                 case CONST_IDENT:
-                    if (!node_typedef.value) node_typedef.value = ast.@allc_str(t.value);
+                    if (!node_typedef.value) node_typedef.value = t.value.tcopy();
                 case TYPE_IDENT:
-                    ast.@allc_add(AstNode, &node_typedef.ftype, t);
+                    node::append_alloc(AstNode, &node_typedef.ftype, t);
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    ast.@allc_add(AstNode, &node_typedef.attributes, t);
+                    node::append_alloc(AstNode, &node_typedef.attributes, t);
                 case EQ:
                     nextcase STATE: state.transition(EOS);
                 case EOS:

@@ -125,36 +125,43 @@ fn bool Lexer.next_token(&self)
 
 //===========================================
 // 	Lexing general methods.
-// 		TODO: why are these macros??
-// 		TODO: side effects could be "fun" to debug
 //===========================================
 
-// Peek at the current character in the buffer.
-macro char peek(lexer_) 
+<*
+ Peek at the current character in the buffer.
+*>
+macro char peek(lexer) 
 {
-    return (*(lexer_).current);
+    return (*(lexer).current);
 }
 
-// Look at the prev character in the buffer.
-macro char prev(lexer_) 
+<*
+ Look at the prev character in the buffer.
+*>
+macro char prev(lexer) 
 {
-    return ((lexer_).current[-1]);
+    return ((lexer).current[-1]);
 }
 
-// // Peek one character ahead.
-macro char peek_next(lexer_) 
+<* 
+ Peek one character ahead.
+*>
+macro char peek_next(lexer) 
 {
-    return ((lexer_).current[1]);
+    return ((lexer).current[1]);
 }
 
-//
-// // Is the current character '\0' if so we assume we reached the end.
-macro bool reached_end(lexer_)
+<*
+ Is the current character '\0' if so we assume we reached the end.
+*>
+macro bool reached_end(lexer)
 {
-    return (lexer_.current >= (lexer_.file_begin + lexer_.file_len) || lexer_.current[0] == '\0');
+    return (lexer.current >= (lexer.file_begin + lexer.file_len) || lexer.current[0] == '\0');
 }
 
-// Step one character forward and return that character
+<* 
+ Step one character forward and return that character
+*>
 fn char next(Lexer* lexer) @inline
 {
     if (@unlikely(*lexer.current == '\n')) 
@@ -170,7 +177,9 @@ fn char next(Lexer* lexer) @inline
     return (lexer.current)[0];
 }
 
-// Backtrack the buffer read one step.
+<* 
+ Backtrack the buffer read one step.
+*>
 fn void backtrack(Lexer* lexer) @inline 
 {
     lexer.current--;
@@ -180,7 +189,9 @@ fn void backtrack(Lexer* lexer) @inline
     }
 }
 
-// Skip the x next characters.
+<* 
+ Skip the x next characters.
+*>
 fn void skip(Lexer* lexer, int steps) @inline 
 {
     assert(steps > 0);
@@ -190,7 +201,9 @@ fn void skip(Lexer* lexer, int steps) @inline
     }
 }
 
-// Match a single character – if successful, more one step forward.
+<* 
+ Match a single character – if successful, more one step forward.
+*>
 fn bool match(Lexer* lexer, char expected) @inline 
 {
     if (lexer.current[0] != expected) return false;
@@ -262,7 +275,8 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
         case '}':
             return new_token(lexer, RBRACE, "}");
         case '(':
-            return match(lexer, '<') ? new_token(lexer, LGENPAR, "(<") : new_token(lexer, LPAREN, "(");
+            return new_token(lexer, LPAREN, "(");
+            // return match(lexer, '<') ? new_token(lexer, LGENPAR, "(<") : new_token(lexer, LPAREN, "(");
         case ')':
             return new_token(lexer, RPAREN, ")");
         case '[':
@@ -320,7 +334,7 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
                 if (match(lexer, '=')) return new_token(lexer, SHR_ASSIGN, ">>=");
                 return new_token(lexer, SHR, ">>");
             }
-            if (match(lexer, ')')) return new_token(lexer, RGENPAR, ">)");
+            // if (match(lexer, ')')) return new_token(lexer, RGENPAR, ">)");
             if (match(lexer, ']')) return new_token(lexer, RVEC, ">]");
             
 			return match(lexer, '=') ? new_token(lexer, GREATER_EQ, ">=") : new_token(lexer, GREATER, ">");
@@ -433,7 +447,9 @@ fn void begin_new_token(Lexer* lexer) @inline
     lexer.start_row_start = lexer.line_start;
 }
 
-// Add a new regular token.
+<* 
+ Add a new regular token.
+*>
 fn bool new_token(Lexer* lexer, TokenType type, String string) @inline 
 {
     set_generic_token(lexer, type, string);
@@ -478,7 +494,9 @@ fn void set_generic_token(Lexer* lexer, TokenType type, String value) @inline
     lexer.token.row = line;
 }
 
-// Error? We simply generate an invalid token and print out the error.
+<*
+ Error? We simply generate an invalid token and print out the error.
+*>
 macro bool add_error_token(Lexer* lexer, String message) 
 {
 
@@ -486,22 +504,28 @@ macro bool add_error_token(Lexer* lexer, String message)
     return false;
 }
 
-// Error at the start of the lexing, with a single length.
+<*
+ Error at the start of the lexing, with a single length.
+*>
 macro bool add_error_token_at_start(Lexer* lexer, String message) 
 {
     set_generic_token(lexer, INVALID_TOKEN, message);
     return false;
 }
 
-// Create an error token at a particular place in the file.
-// used for pointing out errors in strings etc.
+<*
+ Create an error token at a particular place in the file.
+ used for pointing out errors in strings etc.
+*>
 macro bool add_error_token_at(Lexer* lexer, char* loc, isz len, String message) 
 {
     set_generic_token(lexer, INVALID_TOKEN, message);
     return false;
 }
 
-// Print an error at the current location.
+<*
+ Print an error at the current location.
+*>
 macro bool add_error_token_at_current(Lexer* lexer, String message) 
 {
     set_generic_token(lexer, INVALID_TOKEN, message);

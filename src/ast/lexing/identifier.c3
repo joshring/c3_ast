@@ -2,8 +2,10 @@ module ast::lexer;
 
 import std::math;
 
-// tries to extent current AT_IDENT
-// for handling @if(env::SOO || SOME) @export("something")
+<*
+ tries to extent current AT_IDENT
+ for handling @if(env::SOO || SOME) @export("something")
+*>
 fn void Lexer.extend_current_attribute(Lexer* lexer)
 {
     Token* result = &lexer.token;
@@ -52,8 +54,10 @@ fn void Lexer.extend_current_attribute(Lexer* lexer)
     // unreachable();
 }
 
-//scan_ident Parses identifiers. Note that this is a bit complicated here since
-// we split identifiers into 2 types + find keywords.
+<* 
+ scan_ident Parses identifiers. Note that this is a bit complicated here since
+ we split identifiers into 2 types + find keywords.
+*>
 fn bool scan_ident(
     Lexer* lexer, TokenType normal, TokenType const_token, TokenType type_token, char prefix
 ) @inline 

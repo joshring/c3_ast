@@ -6,14 +6,22 @@
 - Tests updated []
 - Investigate ways to simplify
 - Integrate into LSP
+- replace `ast.@node_at` with `node::index` 		- DONE
+- replace `ast.@node_len` with `node::len` 			- DONE
+- replace `ast.@allc_add` with `node::append_alloc` - TODO
+- replace `ast.@allc_str` with `string_here.copy(allocator)` - in progress, but likely want to tackle one instance at a time as its lead to some hard to track down problems? debugger required
 
 ### language syntax changes since this was written
 ```c3
 	/** and */ were replaced with <* and *>
 	
-	{| and |} were removed
+	LBRAPIPE {| and |} were removed
 	
 	List(<MyType>) became List{MyType}
+	
+	
+	(< LGENPAR
+	>) RGENPAR
 	
 	read more here: https://github.com/c3lang/c3c/blob/master/releasenotes.md
 ```

@@ -4,9 +4,9 @@ module ast::lexer;
 // --- Comment parsing
 
 
-/**
- * Skip regular whitespace.
- */
+<*
+ Skip regular whitespace.
+*>
 fn bool skip_whitespace(Lexer* lexer)
 {
     bool has_empty_line = false;
@@ -72,9 +72,9 @@ fn bool skip_whitespace(Lexer* lexer)
     return false;
 }
 
-/**
- * Parsing of the "//" line comment - skipping past the end.
- */
+<*
+ Parsing of the "//" line comment - skipping past the end.
+*>
 fn bool parse_line_comment(Lexer* lexer) @inline
 {
     backtrack(lexer);
@@ -113,9 +113,9 @@ fn bool parse_line_comment(Lexer* lexer) @inline
     );
 }
 
-/**
- * Parse the common / *  * / style multiline comments, allowing nesting.
- **/
+<*
+ Parse the common / *  * / style multiline comments, allowing nesting.
+*>
 fn bool parse_multiline_comment(Lexer* lexer) @inline
 {
     backtrack(lexer);
