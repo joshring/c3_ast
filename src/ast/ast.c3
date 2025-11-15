@@ -13,23 +13,12 @@ fn Ast parse(
     String contents, 
 	String file_path, 
 	bool print_lex = false, 
-	DynamicArenaAllocator* allocator = null
 )
 {
     Ast ast;
-    if (allocator == null) 
-	{
-        // typically this will be actual only for tests
-        ast.allocator = mem::alloc(DynamicArenaAllocator);
-        ast.allocator.init(allocator: tmem, page_size: 1024);
-    } 
-	else 
-	{
-        ast.allocator = allocator;
-    }
     assert(file_path, "empty path");
     assert(file_path.ends_with(".c3"), "wrong extension");
-    ast.path = ast.@allc_str(file_path);
+    ast.path = file_path.tcopy();
 
     lexer::init(&ast.lexer, contents);
     NodeParser node_fn = null;
@@ -40,7 +29,7 @@ fn Ast parse(
     );
     current_module.file_path = ast.path;
 
-    ast.state_stack.init(allocator: allocator);
+    ast.state_stack.tinit();
     defer ast.state_stack.free();
 
     while LOOP: (ast.lexer.next_token()) 
@@ -131,7 +120,7 @@ fn Ast parse(
                 case MODULE:
                     assert(node == current_module);
                     DString mname = dstring::temp();
-                    node.value = ast.@allc_str(node::to_string(current_module.name, mname, "::"));
+                    node.value = node::to_string(current_module.name, mname, "::").tcopy();
                     current_module.hash.init();
                     current_module.hash.update(node.value);
                     nextcase default;
@@ -163,7 +152,6 @@ struct Ast
     List{NodeParserState} state_stack;
     String path;
     AstModule* modules;
-    allocator::DynamicArenaAllocator* allocator;
 }
 
 alias NodeParser = fn bool (Ast* ast, AstNode* node, Token* t, NodeParserState* state);
@@ -263,12 +251,12 @@ struct AstDocContract
     AstNode* items;
 }
 
-//
+//=============================================
 //                 NODE MANAGEMENT
-//
+//=============================================
 
-// TODO: create module to clarify naming
 module ast::node;
+
 import ast::lexer;
 
 macro last(node_tree) 
@@ -285,48 +273,21 @@ macro last(node_tree)
     return node;
 }
 
-macro @node_last(self) 
-{
-    assert(self != null);
-    $typeof(self) node = self;
-    while (node.next) 
-	{
-        node = ($typeof(self))node.next;
-    }
-    return node;
-}
-
 <*
  Append ast node to last node
- 
+ @require node_tree != null
 *>
-// macro AstNode* append(AstNode** self, AstNode* new) 
-// {
-//     assert(self != null);
-
-//     if (*self == null) 
-// 	{
-//         *self = new;
-//     } 
-// 	else 
-// 	{
-//         AstNode* node = @node_last(*self);
-//         node.next = new;
-//     }
-//     return new;
-// }
-
-macro AstNode* @node_add(AstNode** self, AstNode* new) 
+macro AstNode* append(AstNode** node_tree, AstNode* new) 
 {
-    assert(self != null);
+    assert(node_tree != null);
 
-    if (*self == null) 
+    if (*node_tree == null) 
 	{
-        *self = new;
+        *node_tree = new;
     } 
 	else 
 	{
-        AstNode* node = last(*self);
+        AstNode* node = last(*node_tree);
         node.next = new;
     }
     return new;
@@ -335,23 +296,47 @@ macro AstNode* @node_add(AstNode** self, AstNode* new)
 macro @node_foreach(#self; @body(item))
 {
     var node = #self;
-    while (node) 
+    while (node != null) 
 	{
         @body(node);
         node = ($typeof(#self))node.next;
     }
 }
 
-macro Ast.@allc_add(&self, $Type, AstNode** collection, lexer::Token* token) 
+
+macro append_alloc(
+	$Type, 
+	AstNode** collection, 
+	lexer::Token* token,
+) 
 {
-    $Type* result = self.allocator.acquire($Type.sizeof, NO_ZERO, $Type.alignof)!!;
+	
+    $Type* result = mem::tnew($Type);
     *result = {
         .type = token.type,
         .istart = token.offset,
         .iend = token.offset + token.value.len,
-        .value = self.@allc_str(token.value),
+        .value = token.value.tcopy(),
     };
-    return @node_add(collection, result);
+    return append(collection, result);
+}
+
+
+macro Ast.@allc_add(
+	&self,
+	$Type, 
+	AstNode** collection, 
+	lexer::Token* token,
+) 
+{
+    $Type* result = mem::tnew($Type);
+    *result = {
+        .type = token.type,
+        .istart = token.offset,
+        .iend = token.offset + token.value.len,
+        .value = token.value.tcopy(),
+    };
+    return append(collection, result);
 }
 
 
@@ -380,41 +365,6 @@ macro to_string(node_tree, DString out_str, String sep = ",")
     return out_str.str_view();
 }
 
-// <*
-//  DEPRECATED: use ast::to_string
-//  output string of ast node tree
-// *>
-// macro Ast.@node_join(self, node, DString out_str, String sep = ",")
-// {
-//     out_str.clear();
-//     $typeof(node) _node = node;
-//     while (_node) 
-// 	{
-//         out_str.append(_node.value);
-//         _node = ($typeof(node))_node.next;
-//         if (_node) 
-// 		{
-//             out_str.append(sep);
-//         }
-//     }
-//     return out_str.str_view();
-// }
-
-// <*
-//  DEPRECATED: use ast::len
-//  iterate to the end of the linked list recording its length
-// *>
-// macro uint Ast.@node_len(self, node)
-// {
-//     uint len = 0;
-//     $typeof(node) _node = node;
-//     while (_node) 
-// 	{
-//         len++;
-//         _node = ($typeof(node))_node.next;
-//     }
-//     return len;
-// }
 
 <*
  iterate to the end of the node tree (linked list) recording its length
@@ -435,33 +385,9 @@ macro uint len(node_tree)
     return len;
 }
 
-// <*
-//  DEPREACTED: use ast::index
- 
-//  return the node of a given type at a given index
-//  traverses linked list until next==null I think?
- 
-//  Q: isn't this function a bit strange? why not return the node at a given index instead? 
-//  	it feels strange/unnecesisary giving the type as a paramter
-// *>
-// macro Ast.@node_at(self, node, uint index)
-// {
-//     uint len = 0;
-//     $typeof(node) _node = node;
-//     while (_node) 
-// 	{
-//         if (len == index) return _node;
-//         len++;
-//         _node = ($typeof(node))_node.next;
-//     }
-//     return _node;
-// }
-
 <*
  return the node of a given type at a given index
  traverses node tree (linked list) until next==null
-
- my version of Ast.@node_at
 *>
 macro index(node_tree, uint index)
 {
@@ -477,11 +403,4 @@ macro index(node_tree, uint index)
         len++;
     }
     return null;
-}
-
-
-macro String Ast.@allc_str(&self, String s) 
-{
-    String result = s.copy(self.allocator);
-    return result;
 }

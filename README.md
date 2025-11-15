@@ -6,9 +6,10 @@
 - Tests updated []
 - Investigate ways to simplify
 - Integrate into LSP
-- replace `ast.@node_at` with `ast::traverse_to_index`
-- replace `ast.@node_len` with `ast::traverse_len`
-
+- replace `ast.@node_at` with `node::index` 		- DONE
+- replace `ast.@node_len` with `node::len` 			- DONE
+- replace `ast.@allc_add` with `node::append_alloc` - TODO
+- replace `ast.@allc_str` with `string_here.copy(allocator)` - in progress, but likely want to tackle one instance at a time as its lead to some hard to track down problems? debugger required
 
 ### language syntax changes since this was written
 ```c3
