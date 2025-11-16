@@ -53,7 +53,7 @@ enum TokenType : uint
     GREATER_EQ,  // >=
     IMPLIES,  // =>
     LESS_EQ,  // <=
-    LBRAPIPE,  // {|
+    // LBRAPIPE,  // {| removed
     // LGENPAR,  // (<  removed
     LVEC,  // [<
     MINUS_ASSIGN,  // -=
@@ -64,7 +64,7 @@ enum TokenType : uint
     OR,  // ||
     PLUS_ASSIGN,  // +=
     PLUSPLUS,  // ++
-    RBRAPIPE,  // |}
+    // RBRAPIPE,  // |} removed
     // RGENPAR,  // >)  removed
     RVEC,  // >]
     QUESTQUEST,  // ??
@@ -144,8 +144,8 @@ enum TokenType : uint
     ASSERT,
     ASM,
     STRUCT,
-    DEF,
-    DISTINCT,
+    ALIAS,
+	TYPEDEF,
     BITSTRUCT,
     FAULT,
     UNION,
@@ -448,8 +448,6 @@ fn String token_type_to_string(TokenType type)
             return "=>";
         case LESS_EQ:
             return "<=";
-        case LBRAPIPE:
-            return "{|";
         // case LGENPAR:
         //     return "(<";
         case LVEC:
@@ -472,8 +470,6 @@ fn String token_type_to_string(TokenType type)
             return "++";
         case QUESTQUEST:
             return "??";
-        case RBRAPIPE:
-            return "|}";
         // case RGENPAR:
         //     return ">)";
         case RVEC:
@@ -567,14 +563,14 @@ fn String token_type_to_string(TokenType type)
             return "const";
         case CONTINUE:
             return "continue";
-        case DEF:
-            return "def";
+		case ALIAS:
+			return "alias";
+        case TYPEDEF:
+            return "typedef";
         case DEFAULT:
             return "default";
         case DEFER:
             return "defer";
-        case DISTINCT:
-            return "distinct";
         case DO:
             return "do";
         case ELSE:

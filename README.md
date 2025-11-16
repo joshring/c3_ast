@@ -15,14 +15,24 @@
 ```c3
 	/** and */ were replaced with <* and *>
 	
-	LBRAPIPE {| and |} were removed
+	LBRAPIPE {| and  RBRAPIPE |} were removed
 	
-	List(<MyType>) became List{MyType}   type{type}
+	List(<MyType>) became List{MyType}   type{type} ->  `TYPE_IDENT[List] { TYPE_IDENT[int] }`
+		need to adjust NodeParserState.check_scope to make sure the generic is correctly identified as a scope
+	
 	
 	
 	(< LGENPAR
 	>) RGENPAR
 	
+	Check we have all of:
+		+++
+		&&&
+		|||
+		..
+		^
+		~
+		
 	read more here: https://github.com/c3lang/c3c/blob/master/releasenotes.md
 ```
 

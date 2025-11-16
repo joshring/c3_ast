@@ -135,32 +135,14 @@ fn void test_scope()
     test::eq(state.scope_depth, 3);
     test::eq(state.scope_stack[state.scope_depth - 1], t);
 
-    t = TokenType.LBRAPIPE;
-    state.check_scope(t);
-    test::eq(state.scope_depth, 4);
-    test::eq(state.scope_stack[state.scope_depth - 1], t);
-
-    // t = TokenType.LGENPAR;
-    // state.check_scope(t);
-    // test::eq(state.scope_depth, 5);
-    // test::eq(state.scope_stack[state.scope_depth - 1], t);
-
     t = TokenType.LVEC;
     state.check_scope(t);
-    test::eq(state.scope_depth, 5);
+    test::eq(state.scope_depth, 4);
     test::eq(state.scope_stack[state.scope_depth - 1], t);
 
     // EXIT SCOPE in reverse order
 
     t = TokenType.RVEC;
-    state.check_scope(t);
-    test::eq(state.scope_depth, 4);
-
-    // t = TokenType.RGENPAR;
-    // state.check_scope(t);
-    // test::eq(state.scope_depth, 4);
-
-    t = TokenType.RBRAPIPE;
     state.check_scope(t);
     test::eq(state.scope_depth, 3);
 
@@ -1158,6 +1140,14 @@ interface NodeI @local {
     fn List{int} bar() @local;
 }
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
+
+
+	// String current_output = `module IDENT[test] :: IDENT[std] :: IDENT[c3lang] :: IDENT[ast] ; 
+	// interface TYPE_IDENT[NodeI] MACRO_IDENT[@local] { 
+	// 	fn TYPE_IDENT[bool] IDENT[foo] ( TYPE_IDENT[Ast] * IDENT[ast] , TYPE_IDENT[AstNode] * IDENT[node] , TYPE_IDENT[Token] * IDENT[t] ) MACRO_IDENT[@local] ; 
+	// 	fn TYPE_IDENT[List] { TYPE_IDENT[int] } IDENT[bar] ( ) MACRO_IDENT[@local] ; 
+	// } COMMENT_SINGLE`#2` EOF 
+	// `;
     DString contents = dstring::temp(code);
     Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
     
@@ -2006,11 +1996,11 @@ struct MyBit {
     test::eq(struct_type.iend, code.len - 4);
 }
 
-fn void test_def()
+fn void test_alias()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
-def Int32 = int;
+<*alias doc*>
+alias Int32 = int;
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
     Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
@@ -2024,27 +2014,45 @@ def Int32 = int;
     AstTypeDefStructural* struct_type = (AstTypeDefStructural*)node::index(m.decls, 0);
     test::ne(struct_type, null);
 
-    test::eq(struct_type.type, TokenType.DEF);
+    test::eq(struct_type.type, TokenType.ALIAS);
     test::eq(struct_type.value, "Int32");
 
+	io::printn();
+	node::@foreach(struct_type; AstNode* item)
+	{
+		io::printn(*item);
+	};
+	
+	node::@foreach(struct_type.ftype; AstNode* item)
+	{
+		io::printn(*item);
+	};
+	
+	node::@foreach(ast.modules; AstNode* item)
+	{
+		io::printn(*item);
+	};
+
     test::eq(node::to_string(struct_type.attributes, contents), "");
-    test::eq(node::to_string(struct_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(struct_type.docs, contents), "<*alias doc");
     test::eq(node::to_string(struct_type.ftype, contents), "int");
 
     io::printf(
         "\n\n``%s``",
         code[struct_type.istart .. math::min((isz)struct_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(struct_type.istart, 43);
+	
+	
+    test::eq(struct_type.istart, 45);
     test::eq(code[struct_type.iend], ';');
     test::eq(struct_type.iend, code.len - 4);
 }
 
-fn void test_def_const()
+fn void test_alias_const()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
-def MY_CONST = int;
+<*alias doc*>
+alias MY_CONST = int;
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
     Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
@@ -2058,27 +2066,27 @@ def MY_CONST = int;
     AstTypeDefStructural* struct_type = (AstTypeDefStructural*)node::index(m.decls, 0);
     test::ne(struct_type, null);
 
-    test::eq(struct_type.type, TokenType.DEF);
+    test::eq(struct_type.type, TokenType.ALIAS);
     test::eq(struct_type.value, "MY_CONST");
 
     test::eq(node::to_string(struct_type.attributes, contents), "");
-    test::eq(node::to_string(struct_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(struct_type.docs, contents), "<*alias doc");
     test::eq(node::to_string(struct_type.ftype, contents), "int");
 
     io::printf(
         "\n\n``%s``",
         code[struct_type.istart .. math::min((isz)struct_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(struct_type.istart, 43);
+    test::eq(struct_type.istart, 45);
     test::eq(code[struct_type.iend], ';');
     test::eq(struct_type.iend, code.len - 4);
 }
 
-fn void test_def_attr_type()
+fn void test_alias_attr_type()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
-def @Int32 = { @foo @bar };
+<*alias doc*>
+alias @Int32 = { @foo @bar };
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
     Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
@@ -2092,27 +2100,27 @@ def @Int32 = { @foo @bar };
     AstTypeDefStructural* struct_type = (AstTypeDefStructural*)node::index(m.decls, 0);
     test::ne(struct_type, null);
 
-    test::eq(struct_type.type, TokenType.DEF);
+    test::eq(struct_type.type, TokenType.ALIAS);
     test::eq(struct_type.value, "@Int32");
 
     test::eq(node::to_string(struct_type.attributes, contents), "");
-    test::eq(node::to_string(struct_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(struct_type.docs, contents), "<*alias doc");
     test::eq(node::to_string(struct_type.ftype, contents), "{,@foo,@bar,}");
 
     io::printf(
         "\n\n``%s``",
         code[struct_type.istart .. math::min((isz)struct_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(struct_type.istart, 43);
+    test::eq(struct_type.istart, 45);
     test::eq(code[struct_type.iend], ';');
     test::eq(struct_type.iend, code.len - 4);
 }
 
-fn void test_def_inline_list()
+fn void test_alias_inline_list()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
-def IntList32 @test @foo = inline List{int};
+<*alias doc*>
+alias IntList32 @test @foo = inline List{int};
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
     Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
@@ -2126,11 +2134,11 @@ def IntList32 @test @foo = inline List{int};
     AstTypeDefStructural* struct_type = (AstTypeDefStructural*)node::index(m.decls, 0);
     test::ne(struct_type, null);
 
-    test::eq(struct_type.type, TokenType.DEF);
+    test::eq(struct_type.type, TokenType.ALIAS);
     test::eq(struct_type.value, "IntList32");
 
     test::eq(node::to_string(struct_type.attributes, contents), "@test,@foo");
-    test::eq(node::to_string(struct_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(struct_type.docs, contents), "<*alias doc");
     // NOTE: inline expected to be excluded from type fields
     test::eq(node::to_string(struct_type.ftype, contents), "List,{,int,}");
 
@@ -2138,16 +2146,16 @@ def IntList32 @test @foo = inline List{int};
         "\n\n``%s``",
         code[struct_type.istart .. math::min((isz)struct_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(struct_type.istart, 43);
+    test::eq(struct_type.istart, 45);
     test::eq(code[struct_type.iend], ';');
     test::eq(struct_type.iend, code.len - 4);
 }
 
-fn void test_distinct()
+fn void test_alias_fn_pointer()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
-distinct Int32 = int;
+<*alias doc*>
+alias NodeParser = fn bool (Ast* ast, AstNode* node, Token* t, NodeParserState* state);
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
     Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
@@ -2161,18 +2169,55 @@ distinct Int32 = int;
     AstTypeDefStructural* struct_type = (AstTypeDefStructural*)node::index(m.decls, 0);
     test::ne(struct_type, null);
 
-    test::eq(struct_type.type, TokenType.DISTINCT);
+    test::eq(struct_type.type, TokenType.ALIAS);
+    test::eq(struct_type.value, "NodeParser");
+
+    test::eq(node::to_string(struct_type.attributes, contents), "");
+    test::eq(node::to_string(struct_type.docs, contents), "<*alias doc");
+    test::eq(
+        node::to_string(struct_type.ftype, contents),
+        "fn,bool,(,Ast,*,ast,,,AstNode,*,node,,,Token,*,t,,,NodeParserState,*,state,)"
+    );
+
+    io::printf(
+        "\n\n``%s``",
+        code[struct_type.istart .. math::min((isz)struct_type.iend, (isz)(code.len - 1))]
+    );
+    test::eq(struct_type.istart, 45);
+    test::eq(code[struct_type.iend], ';');
+    test::eq(struct_type.iend, code.len - 4);
+}
+
+fn void test_typedef()
+{
+    String code = `module test::std::c3lang::ast;
+<*typedef doc*>
+typedef Int32 = int;
+//`;  // NOTE: // - is sanity guard comment, don't delete it!
+    DString contents = dstring::temp(code);
+    Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
+    
+    contents.clear();
+
+    test::ne(ast.modules, null);
+    AstModule* m = node::index(ast.modules, 0);
+    test::ne(m, null);
+
+    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)node::index(m.decls, 0);
+    test::ne(struct_type, null);
+
+    test::eq(struct_type.type, TokenType.TYPEDEF);
     test::eq(struct_type.value, "Int32");
 
     test::eq(node::to_string(struct_type.attributes, contents), "");
-    test::eq(node::to_string(struct_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(struct_type.docs, contents), "<*typedef doc");
     test::eq(node::to_string(struct_type.ftype, contents), "int");
 
     io::printf(
         "\n\n``%s``",
         code[struct_type.istart .. math::min((isz)struct_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(struct_type.istart, 43);
+    test::eq(struct_type.istart, 47);
     test::eq(code[struct_type.iend], ';');
     test::eq(struct_type.iend, code.len - 4);
 }
@@ -2180,7 +2225,7 @@ distinct Int32 = int;
 fn void test_constant()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
+<*const doc*>
 const Int32 A_FOO_BAR = 123;
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
@@ -2199,54 +2244,18 @@ const Int32 A_FOO_BAR = 123;
     test::eq(struct_type.value, "A_FOO_BAR");
 
     test::eq(node::to_string(struct_type.attributes, contents), "");
-    test::eq(node::to_string(struct_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(struct_type.docs, contents), "<*const doc");
     test::eq(node::to_string(struct_type.ftype, contents), "Int32");
 
     io::printf(
         "\n\n``%s``",
         code[struct_type.istart .. math::min((isz)struct_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(struct_type.istart, 43);
+    test::eq(struct_type.istart, 45);
     test::eq(code[struct_type.iend], ';');
     test::eq(struct_type.iend, code.len - 4);
 }
 
-fn void test_def_fn_pointer()
-{
-    String code = `module test::std::c3lang::ast;
-<*def doc*>
-def NodeParser = fn bool (Ast* ast, AstNode* node, Token* t, NodeParserState* state);
-//`;  // NOTE: // - is sanity guard comment, don't delete it!
-    DString contents = dstring::temp(code);
-    Ast ast = ast::parse(contents.str_view(), "foo.c3", print_lex: true);
-    
-    contents.clear();
-
-    test::ne(ast.modules, null);
-    AstModule* m = node::index(ast.modules, 0);
-    test::ne(m, null);
-
-    AstTypeDefStructural* struct_type = (AstTypeDefStructural*)node::index(m.decls, 0);
-    test::ne(struct_type, null);
-
-    test::eq(struct_type.type, TokenType.DEF);
-    test::eq(struct_type.value, "NodeParser");
-
-    test::eq(node::to_string(struct_type.attributes, contents), "");
-    test::eq(node::to_string(struct_type.docs, contents), "<*def doc");
-    test::eq(
-        node::to_string(struct_type.ftype, contents),
-        "fn,bool,(,Ast,*,ast,,,AstNode,*,node,,,Token,*,t,,,NodeParserState,*,state,)"
-    );
-
-    io::printf(
-        "\n\n``%s``",
-        code[struct_type.istart .. math::min((isz)struct_type.iend, (isz)(code.len - 1))]
-    );
-    test::eq(struct_type.istart, 43);
-    test::eq(code[struct_type.iend], ';');
-    test::eq(struct_type.iend, code.len - 4);
-}
 
 fn void test_module_imports_comma_sep()
 {
@@ -2410,7 +2419,7 @@ fn MyType* MyFoo.test_node(&self) {
 fn void test_module_variable()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
+<*global doc*>
 int global_int @local @bar("foo") = 2;
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
@@ -2429,14 +2438,14 @@ int global_int @local @bar("foo") = 2;
     test::eq(var_type.value, "global_int");
 
     test::eq(node::to_string(var_type.attributes, contents), `@local,@bar("foo")`);
-    test::eq(node::to_string(var_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(var_type.docs, contents), "<*global doc");
     test::eq(node::to_string(var_type.ftype, contents), "int");
 
     io::printf(
         "\n\n``%s``",
         code[var_type.istart .. math::min((isz)var_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(var_type.istart, 43);
+    test::eq(var_type.istart, 46);
     test::eq(code[var_type.iend], ';');
     test::eq(var_type.iend, code.len - 4);
 }
@@ -2444,7 +2453,7 @@ int global_int @local @bar("foo") = 2;
 fn void test_module_variable_tlocal()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
+<*tlocal doc*>
 tlocal int global_int @local @bar("foo") = 2;
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
@@ -2463,14 +2472,14 @@ tlocal int global_int @local @bar("foo") = 2;
     test::eq(var_type.value, "global_int");
 
     test::eq(node::to_string(var_type.attributes, contents), `@local,@bar("foo")`);
-    test::eq(node::to_string(var_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(var_type.docs, contents), "<*tlocal doc");
     test::eq(node::to_string(var_type.ftype, contents), "int");
 
     io::printf(
         "\n\n``%s``",
         code[var_type.istart .. math::min((isz)var_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(var_type.istart, 43);
+    test::eq(var_type.istart, 46);
     test::eq(code[var_type.iend], ';');
     test::eq(var_type.iend, code.len - 4);
 }
@@ -2478,7 +2487,7 @@ tlocal int global_int @local @bar("foo") = 2;
 fn void test_module_variable_custom_type()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
+<*local doc*>
 MyType global_int @local @bar("foo");
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
@@ -2497,14 +2506,14 @@ MyType global_int @local @bar("foo");
     test::eq(var_type.value, "global_int");
 
     test::eq(node::to_string(var_type.attributes, contents), `@local,@bar("foo")`);
-    test::eq(node::to_string(var_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(var_type.docs, contents), "<*local doc");
     test::eq(node::to_string(var_type.ftype, contents), "MyType");
 
     io::printf(
         "\n\n``%s``",
         code[var_type.istart .. math::min((isz)var_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(var_type.istart, 43);
+    test::eq(var_type.istart, 45);
     test::eq(code[var_type.iend], ';');
     test::eq(var_type.iend, code.len - 4);
 }
@@ -2512,7 +2521,7 @@ MyType global_int @local @bar("foo");
 fn void test_module_variable_array()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
+<*local doc*>
 char[10] global_int @local @bar("foo");
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
@@ -2531,14 +2540,14 @@ char[10] global_int @local @bar("foo");
     test::eq(var_type.value, "global_int");
 
     test::eq(node::to_string(var_type.attributes, contents), `@local,@bar("foo")`);
-    test::eq(node::to_string(var_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(var_type.docs, contents), "<*local doc");
     test::eq(node::to_string(var_type.ftype, contents), "char,[,10,]");
 
     io::printf(
         "\n\n``%s``",
         code[var_type.istart .. math::min((isz)var_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(var_type.istart, 43);
+    test::eq(var_type.istart, 45);
     test::eq(code[var_type.iend], ';');
     test::eq(var_type.iend, code.len - 4);
 }
@@ -2546,7 +2555,7 @@ char[10] global_int @local @bar("foo");
 fn void test_module_variable_generic()
 {
     String code = `module test::std::c3lang::ast;
-<*def doc*>
+<*generic doc*>
 List{MyType} global_int @local @bar("foo");
 //`;  // NOTE: // - is sanity guard comment, don't delete it!
     DString contents = dstring::temp(code);
@@ -2571,14 +2580,14 @@ List{MyType} global_int @local @bar("foo");
     test::eq(var_type.value, "global_int");
 
     test::eq(node::to_string(var_type.attributes, contents), `@local,@bar("foo")`);
-    test::eq(node::to_string(var_type.docs, contents), "<*def doc");
+    test::eq(node::to_string(var_type.docs, contents), "<*generic doc");
     test::eq(node::to_string(var_type.ftype, contents), "List,{,MyType,}");
 
     io::printf(
         "\n\n``%s``",
         code[var_type.istart .. math::min((isz)var_type.iend, (isz)(code.len - 1))]
     );
-    test::eq(var_type.istart, 43);
+    test::eq(var_type.istart, 47);
     test::eq(code[var_type.iend], ';');
     test::eq(var_type.iend, code.len - 4);
 }

@@ -273,12 +273,11 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
         case ';':
             return new_token(lexer, EOS, ";");
         case '{':
-            return match(lexer, '|') ? new_token(lexer, LBRAPIPE, "{|") : new_token(lexer, LBRACE, "{"); 
+			return new_token(lexer, LBRACE, "{");
         case '}':
             return new_token(lexer, RBRACE, "}");
         case '(':
             return new_token(lexer, LPAREN, "(");
-            // return match(lexer, '<') ? new_token(lexer, LGENPAR, "(<") : new_token(lexer, LPAREN, "(");
         case ')':
             return new_token(lexer, RPAREN, ")");
         case '[':
@@ -351,7 +350,6 @@ fn bool lexer_scan_token_inner(Lexer* lexer)
             }
             return match(lexer, '=') ? new_token(lexer, BIT_AND_ASSIGN, "&=") : new_token(lexer, AMP, "&");
         case '|':
-            if (match(lexer, '}')) return new_token(lexer, RBRAPIPE, "|}");
             if (match(lexer, '|')) 
 			{
                 return match(lexer, '|') ? new_token(lexer, CT_OR, "|||") : new_token(lexer, OR, "||");
@@ -550,14 +548,14 @@ fn TokenType token_from_identifier(String indentifier)
             return CONST;
         case "continue":
             return CONTINUE;
-        case "def":
-            return DEF;
+        case "alias":
+            return ALIAS;
+		case "typedef":
+			return TYPEDEF;
         case "default":
             return DEFAULT;
         case "defer":
             return DEFER;
-        case "distinct":
-            return DISTINCT;
         case "do":
             return DO;
         case "else":

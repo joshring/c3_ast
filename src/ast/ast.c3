@@ -92,8 +92,8 @@ fn Ast parse(
                         AstTypeDefStructural, &current_module.decls, &ast.lexer.token
                     );
                     ((AstTypeDefStructural*)node).docs = docstring;
-                case DEF:
-                case DISTINCT:
+                case TYPEDEF:
+                case ALIAS:
                     node_fn = &Ast.parse_typedef;
                     node = node::append_alloc(AstTypeDef, &current_module.decls, &ast.lexer.token);
                     ((AstTypeDef*)node).docs = docstring;
@@ -253,6 +253,192 @@ struct AstDocContract
     AstNode* items;
 }
 
+
+//=========================================
+// Experimenting without inline structs
+//=========================================
+
+// struct Ast
+// {
+//     Lexer lexer;
+//     List{NodeParserState} state_stack;
+//     String path;
+//     AstModule* modules;
+// }
+
+// alias NodeParser = fn bool (Ast* ast, AstNode* node, Token* t, NodeParserState* state);
+
+// struct NodeParserState
+// {
+//     TokenType[32] scope_stack;
+//     AstNode* sub_node;
+//     TokenType current_state;
+//     TokenType last_token;
+//     TokenType current_token;
+//     TokenType initial_token;
+//     uint scope_depth;
+// }
+
+// struct AstNode
+// {
+//     String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+// }
+
+// struct AstModule
+// {
+//     // inline AstNode node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+//     String file_path;
+//     AstNode* name;
+//     AstNode* attributes;
+//     AstImport* imports;
+//     AstTypeDef* decls;
+//     AstDoc* docs;
+//     Fnv32a hash;
+//     uint src_line;
+// }
+
+// struct AstTypeDef
+// {
+//     // inline AstNode node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+//     AstModule* mod;  // module which owns the type def
+//     AstNode* attributes;
+//     AstDoc* docs;
+//     AstNode* ftype;  // field or function return type
+// }
+
+// struct AstTypeDefEnumerable
+// {
+//     // inline AstTypeDef node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+//     AstModule* mod;  // module which owns the type def
+//     AstNode* attributes;
+//     AstDoc* docs;
+//     AstNode* ftype;  // field or function return type
+	
+//     AstNode* values;
+// }
+
+// struct AstTypeDefInterface
+// {
+//     // inline AstTypeDef node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+//     AstModule* mod;  // module which owns the type def
+//     AstNode* attributes;
+//     AstDoc* docs;
+//     AstNode* ftype;  // field or function return type
+	
+//     AstCallable* functions;
+// }
+
+// struct AstTypeDefStructural
+// {
+//     // inline AstTypeDef node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+//     AstModule* mod;  // module which owns the type def
+//     AstNode* attributes;
+//     AstDoc* docs;
+//     AstNode* ftype;  // field or function return type
+	
+//     AstTypeDef* inlines;
+//     AstTypeDef* members;
+// }
+
+// struct AstCallable
+// {
+//     // inline AstTypeDef node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+//     AstModule* mod;  // module which owns the type def
+//     AstNode* attributes;
+//     AstDoc* docs;
+//     AstNode* ftype;  // field or function return type
+	
+//     AstNode* name;
+//     AstCallableParam* params;
+//     uint iscope_start;
+// }
+
+// struct AstCallableParam
+// {
+//     // inline AstNode node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+	
+//     AstNode* param_type;
+//     AstNode* attributes;
+// }
+
+// struct AstImport
+// {
+//     // inline AstNode node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+	
+//     AstNode* name;
+//     AstNode* attributes;
+// }
+
+// struct AstDoc
+// {
+//     // inline AstNode node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+	
+//     AstDocContract* contracts;
+// }
+
+// struct AstDocContract
+// {
+//     // inline AstNode node;
+// 	String value;
+//     AstNode* next;
+//     TokenType type;
+//     uint istart;
+//     uint iend;
+	
+//     AstNode* items;
+// }
+
+
+
 //=============================================
 //                 NODE MANAGEMENT
 //=============================================
@@ -298,9 +484,15 @@ macro AstNode* append(AstNode** node_tree, AstNode* new)
 
 <*
  Apply a function to a node tree
- Q: is there a simpler way to achieve this?
+ Example:
+ 
+ 	node::@foreach(struct_type; AstNode* item)
+	{
+		io::printn(*item);
+	};
+	
 *>
-macro @node_foreach(#node_tree; @body(item))
+macro @foreach(#node_tree; @body(item))
 {
     var node = #node_tree;
     while (node != null) 

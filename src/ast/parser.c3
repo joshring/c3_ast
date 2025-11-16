@@ -18,20 +18,18 @@ macro TokenType NodeParserState.prev_scope(&self, usz offset)
     return self.scope_stack[self.scope_depth - offset];
 }
 
-macro NodeParserState.check_scope(&self, TokenType t)
+macro NodeParserState.check_scope(&self, TokenType token_type)
 {
 
-    // case LGENPAR:  // (<
-    switch (t) 
+    switch (token_type) 
 	{
         case LBRACE:  // {
         case LBRACKET:  // [
         case LPAREN:  // (
-        case LBRAPIPE:  // {|
         case LVEC:  // [<
         case DOCS_START:  // <*
             if (self.scope_depth >= self.scope_stack.len) return;
-            self.scope_stack[self.scope_depth] = t;
+            self.scope_stack[self.scope_depth] = token_type;
             self.scope_depth++;
         case CT_ENDIF:
             if (self.scope_depth == 0) nextcase default;
@@ -54,12 +52,6 @@ macro NodeParserState.check_scope(&self, TokenType t)
         case RPAREN:  // )
             if (self.scope_depth == 0) nextcase default;
             if (self.scope_stack[self.scope_depth - 1] == LPAREN) nextcase EOF;
-        case RBRAPIPE:  // |}
-            if (self.scope_depth == 0) nextcase default;
-            if (self.scope_stack[self.scope_depth - 1] == LBRAPIPE) nextcase EOF;
-        // case RGENPAR:  // >)
-        //     if (self.scope_depth == 0) nextcase default;
-        //     if (self.scope_stack[self.scope_depth - 1] == LGENPAR) nextcase EOF;
         case RVEC:  // >)
             if (self.scope_depth == 0) nextcase default;
             if (self.scope_stack[self.scope_depth - 1] == LVEC) nextcase EOF;
@@ -77,11 +69,14 @@ macro NodeParserState.check_scope(&self, TokenType t)
 
 }
 
-macro TokenType NodeParserState.check(&self, Token* t)
+<*
+ Set current_token and last_token for the token parsed, set token's the scope correctly with check_scope
+*>
+macro TokenType NodeParserState.check(&self, Token* token)
 {
     self.last_token = self.current_token;
-    self.current_token = t.type;
-    self.check_scope(t.type);
+    self.current_token = token.type;
+    self.check_scope(token.type);
     return self.current_state;
 }
 
@@ -94,42 +89,42 @@ macro TokenType NodeParserState.transition(&self, TokenType new_state)
 <*
  @require node.type == MODULE
 *>
-fn bool Ast.parse_module(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_module(&ast, AstNode* node, Token* token, NodeParserState* state)
 {
     AstModule* m = (AstModule*)node;
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:
             state.transition(IDENT);  // expecting module identifiers
         case IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case IDENT:
-                    node::append_alloc(AstNode, &m.name, t);
+                    node::append_alloc(AstNode, &m.name, token);
                 case SCOPE:
                     break;  // skipping ::
                 case AT_IDENT:
                 case EOS:
-                    nextcase STATE: state.transition(t.type);
+                    nextcase STATE: state.transition(token.type);
                 default:
                     break;
             }
         case AT_IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    node::append_alloc(AstNode, &m.attributes, t);
+                    node::append_alloc(AstNode, &m.attributes, token);
                 case EOS:
-                    nextcase STATE: state.transition(t.type);
+                    nextcase STATE: state.transition(token.type);
                 default:
                     break;
             }
 
         case EOS:
             ast.state_stack.remove_last();
-            m.iend = t.offset + t.value.len;
+            m.iend = token.offset + token.value.len;
             return true;
         default:
             break;
@@ -141,11 +136,11 @@ fn bool Ast.parse_module(&ast, AstNode* node, Token* t, NodeParserState* state)
 <*
  @require node.type == IMPORT
 *>
-fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_import(&ast, AstNode* node, Token* token, NodeParserState* state)
 {
     AstImport* imp = (AstImport*)node::last(node);
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:
             state.transition(IDENT);  // expecting module identifiers
@@ -153,33 +148,33 @@ fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
             Token ptok = {
                 .type = TokenType.IMPORT,
                 .value = "import",
-                .row = t.row,
-                .col = t.col,
-                .offset = t.offset,
+                .row = token.row,
+                .col = token.col,
+                .offset = token.offset,
             };
             node::append_alloc(AstImport, &imp.next, &ptok);
             state.transition(IDENT);
         case IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case IDENT:
-                    node::append_alloc(AstNode, &imp.name, t);
+                    node::append_alloc(AstNode, &imp.name, token);
                 case SCOPE:
                     break;  // skipping ::
                 case AT_IDENT:
                 case EOS:
-                    nextcase STATE: state.transition(t.type);
+                    nextcase STATE: state.transition(token.type);
                 case COMMA:
                     nextcase STATE: state.transition(COMMA);
                 default:
                     break;
             }
         case AT_IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    node::append_alloc(AstNode, &imp.attributes, t);
+                    node::append_alloc(AstNode, &imp.attributes, token);
                 case EOS:
                     nextcase STATE: state.transition(EOS);
                 case COMMA:
@@ -189,7 +184,7 @@ fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
             }
         case EOS:
             ast.state_stack.remove_last();
-            imp.iend = t.offset + t.value.len;
+            imp.iend = token.offset + token.value.len;
             return true;
         default:
             break;
@@ -200,14 +195,14 @@ fn bool Ast.parse_import(&ast, AstNode* node, Token* t, NodeParserState* state)
 
 macro parse_callable_params(
 	Ast* ast, 
-	Token* t, 
+	Token* token, 
 	AstCallable* node_func, 
 	NodeParserState* state,
 ) 
 {
     AstCallableParam* current_param = state.sub_node ? (AstCallableParam*)state.sub_node : null;
 
-    switch (t.type) 
+    switch (token.type) 
 	{
         case LPAREN:
             // opening '(' or a part of type definition
@@ -269,7 +264,7 @@ macro parse_callable_params(
                 current_param.type = TokenType.VAR;
                 state.sub_node = current_param;
             }
-            if (!current_param.value && t.type != TYPE_IDENT) 
+            if (!current_param.value && token.type != TYPE_IDENT) 
 			{
                 if (node_func.name && node_func.name.next && !node_func.params.next) 
 				{
@@ -278,13 +273,13 @@ macro parse_callable_params(
                     Token ptok = {
                         .type = TokenType.TYPE_IDENT,
                         .value = node_func.name.value,
-                        .row = t.row,
-                        .col = t.col,
-                        .offset = t.offset,
+                        .row = token.row,
+                        .col = token.col,
+                        .offset = token.offset,
                     };
                     node::append_alloc(AstNode, &current_param.param_type, &ptok);
                 }
-                current_param.value = t.value.tcopy();
+                current_param.value = token.value.tcopy();
             } 
 			else 
 			{
@@ -296,19 +291,19 @@ macro parse_callable_params(
                 if (current_param.value) 
 				{
                     ast.lexer.extend_current_attribute();
-                    node::append_alloc(AstNode, &current_param.attributes, t);
+                    node::append_alloc(AstNode, &current_param.attributes, token);
                 } 
 				else 
 				{
                     // macro @for_each(list; @body(it))
-                    current_param.value = t.value.tcopy();
+                    current_param.value = token.value.tcopy();
                 }
             }
         default:
             // all other goes to type
             if (current_param) 
 			{
-                node::append_alloc(AstNode, &current_param.param_type, t);
+                node::append_alloc(AstNode, &current_param.param_type, token);
             }
     }
 }
@@ -316,18 +311,18 @@ macro parse_callable_params(
 <*
  @require node.type == FN || node.type == MACRO
 *>
-fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_function(&ast, AstNode* node, Token* token, NodeParserState* state)
 {
     AstCallable* node_func = (AstCallable*)node;
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:
-            node_func.iscope_start = t.offset;
+            node_func.iscope_start = token.offset;
             state.transition(RETURN);
         case RETURN:
             // function return type
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case AT_IDENT:
                     nextcase STATE: state.transition(IDENT);
@@ -364,17 +359,17 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
                         nextcase default;
                     }
                 default:
-                    node::append_alloc(AstNode, &node_func.ftype, t);
+                    node::append_alloc(AstNode, &node_func.ftype, token);
             }
         case IDENT:
             // function name
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case AT_IDENT:
                 case IDENT:
                 case TYPE_IDENT:
                     // struct based functions may contain TypeName.func_name
-                    node::append_alloc(AstNode, &node_func.name, t);
+                    node::append_alloc(AstNode, &node_func.name, token);
                 case LPAREN:
                     if (state.scope_depth == 1) 
 					{
@@ -387,14 +382,14 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
             }
         case VAR:
             // Defining function arguments
-            parse_callable_params(ast, t, node_func, state);
+            parse_callable_params(ast, token, node_func, state);
 
         case AT_IDENT:  // regular function attributes
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    node::append_alloc(AstNode, &node_func.attributes, t);
+                    node::append_alloc(AstNode, &node_func.attributes, token);
                 case IMPLIES:  // =>
                     nextcase STATE: state.transition(IMPLIES);
                 case LBRACE:  // {
@@ -403,12 +398,12 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
                     break;
             }
         case SCOPE:  // regular function scope { ... }
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case LBRACE:  // {
                     if (state.scope_depth == 1) 
 					{
-                        node_func.iscope_start = t.offset;
+                        node_func.iscope_start = token.offset;
                     }
                 case RBRACE:  // ending brace
                     if (state.scope_depth == 0) nextcase STATE: state.transition(EOF);
@@ -416,10 +411,10 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
                     break;
             }
         case IMPLIES:  // lambda function fn () => ... @attr;
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case IMPLIES:  // =>
-                    node_func.iscope_start = t.offset;
+                    node_func.iscope_start = token.offset;
                 case EOS:  // ending semicolon
                     if (state.scope_depth == 0) nextcase STATE: state.transition(EOF);
                 default:
@@ -427,7 +422,7 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
             }
         case EOF:
             ast.state_stack.remove_last();
-            node_func.iend = t.offset;
+            node_func.iend = token.offset;
             return true;
         default:
             unreachable();
@@ -439,16 +434,16 @@ fn bool Ast.parse_function(&ast, AstNode* node, Token* t, NodeParserState* state
 <*
  @require node.type == DOCS_START
 *>
-fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_docstring(&ast, AstNode* node, Token* token, NodeParserState* state)
 {
     AstDoc* doc = (AstDoc*)node;
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:
             nextcase STATE: state.transition(DOCS_START);
         case DOCS_START:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case DOCS_END:
                     nextcase STATE: state.transition(DOCS_END);
@@ -458,7 +453,7 @@ fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* stat
                     break;
             }
         case AT_IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case AT_IDENT:
                     if (state.sub_node == null) 
@@ -478,7 +473,7 @@ fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* stat
                     if (contract.value == "@param") 
 					{
                         // excluding [&inout] shit
-                        if (state.scope_depth == 1 && t.type != RBRACKET) 
+                        if (state.scope_depth == 1 && token.type != RBRACKET) 
 						{
                             node::append_alloc(AstNode, &contract.items, &ast.lexer.token);
                         }
@@ -490,7 +485,7 @@ fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* stat
                     break;
             }
         case DOCS_END:
-            doc.iend = t.offset + t.value.len - 1;
+            doc.iend = token.offset + token.value.len - 1;
             ast.state_stack.remove_last();
             return true;
         default:
@@ -503,20 +498,20 @@ fn bool Ast.parse_docstring(&ast, AstNode* node, Token* t, NodeParserState* stat
 <*
  @require node.type == ENUM || node.type == FAULT
 *>
-fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* token, NodeParserState* state)
 {
     AstTypeDefEnumerable* node_enum = (AstTypeDefEnumerable*)node;
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:
             node_enum.value = "";  // place for a type name
             state.transition(IDENT);
         case IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case TYPE_IDENT:
-                    if (!node_enum.value) node_enum.value = t.value.tcopy();
+                    if (!node_enum.value) node_enum.value = token.value.tcopy();
                 case LBRACE:
                     if (state.scope_depth == 1) nextcase STATE: state.transition(SCOPE);
                 case AT_IDENT:
@@ -525,13 +520,13 @@ fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* sta
                     break;
             }
         case AT_IDENT:  // regular function attributes
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case AT_IDENT:
                     if (state.scope_depth == 0) 
 					{
                         ast.lexer.extend_current_attribute();
-                        node::append_alloc(AstNode, &node_enum.attributes, t);
+                        node::append_alloc(AstNode, &node_enum.attributes, token);
                     }
                 case LBRACE:  // {
                     if (state.scope_depth == 1) nextcase STATE: state.transition(SCOPE);
@@ -539,7 +534,7 @@ fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* sta
                     break;
             }
         case SCOPE:  // regular function scope { ... }
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case LBRACE:  // {
                     break;
@@ -559,7 +554,7 @@ fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* sta
                     break;
             }
         case EOF:
-            node_enum.iend = t.offset;
+            node_enum.iend = token.offset;
             ast.state_stack.remove_last();
             return true;
         default:
@@ -573,25 +568,25 @@ fn bool Ast.parse_enumerable(&ast, AstNode* node, Token* t, NodeParserState* sta
 <*
  @require node.type == INTERFACE
 *>
-fn bool Ast.parse_interface(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_interface(&ast, AstNode* node, Token* token, NodeParserState* state)
 {
     AstTypeDefInterface* node_ifc = (AstTypeDefInterface*)node;
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:
             node_ifc.value = "";
             state.transition(TYPE_IDENT);
         case TYPE_IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case TYPE_IDENT:
-                    if (!node_ifc.value) node_ifc.value = t.value.tcopy();
+                    if (!node_ifc.value) node_ifc.value = token.value.tcopy();
                 case AT_IDENT:
                     if (state.scope_depth == 0) 
 					{
                         ast.lexer.extend_current_attribute();
-                        node::append_alloc(AstNode, &node_ifc.attributes, t);
+                        node::append_alloc(AstNode, &node_ifc.attributes, token);
                     }
                 case LBRACE:
                     if (state.scope_depth == 1) nextcase STATE: state.transition(SCOPE);
@@ -599,7 +594,7 @@ fn bool Ast.parse_interface(&ast, AstNode* node, Token* t, NodeParserState* stat
                     break;
             }
         case SCOPE:  // regular function scope { ... }
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case LBRACE:  // {
                     break;
@@ -663,7 +658,7 @@ fn bool Ast.parse_interface(&ast, AstNode* node, Token* t, NodeParserState* stat
             }
         case EOF:
             ast.state_stack.remove_last();
-            node_ifc.iend = t.offset;
+            node_ifc.iend = token.offset;
             return true;
         default:
             unreachable();
@@ -676,31 +671,31 @@ fn bool Ast.parse_interface(&ast, AstNode* node, Token* t, NodeParserState* stat
  @require node != null
  @require node.type == STRUCT || node.type == UNION || node.type == BITSTRUCT
 *>
-fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_structural(&ast, AstNode* node, Token* token, NodeParserState* state)
 {
     AstTypeDefStructural* node_struct = (AstTypeDefStructural*)node;
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:  // got struct keyword
             node_struct.value = "";
             state.transition(TYPE_IDENT);
         case TYPE_IDENT:  // parse struct type and attributes
-            switch (t.type)
+            switch (token.type)
 			{
                 case TYPE_IDENT:
-                    if (!node_struct.value) node_struct.value = t.value.tcopy();
+                    if (!node_struct.value) node_struct.value = token.value.tcopy();
                 case IDENT:
                     if (ast.state_stack.len() > 1) 
 					{
                         // sub-structs have IDENT instead of TYPE_IDENT!
-                        if (!node_struct.value) node_struct.value = t.value.tcopy();
+                        if (!node_struct.value) node_struct.value = token.value.tcopy();
                     }
                 case AT_IDENT:
                     if (state.scope_depth == 0) 
 					{
                         ast.lexer.extend_current_attribute();
-                        node::append_alloc(AstNode, &node_struct.attributes, t);
+                        node::append_alloc(AstNode, &node_struct.attributes, token);
                     }
                 case LBRACE:
                     if (state.scope_depth == 1) nextcase STATE: state.transition(SCOPE);
@@ -708,7 +703,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                     break;
             }
         case DOCS_START:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case DOCS_START:
                     assert(state.sub_node == null);
@@ -720,7 +715,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                     break;
             }
         case SCOPE:  // struct scope, let's find any sub-structs or members
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case LBRACE:  // scope entry
                     break;
@@ -746,7 +741,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                     break;
             }
         case VAR:  // found individual field start parsing it
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case RBRACE:  // ending brace
                     if (state.scope_depth == 0) nextcase STATE: state.transition(EOF);
@@ -763,19 +758,19 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                         );
 
                         s.docs = (AstDoc*)state.sub_node;
-                        if (t.type == TYPE_IDENT) node::append_alloc(AstNode, &s.ftype, t);
+                        if (token.type == TYPE_IDENT) node::append_alloc(AstNode, &s.ftype, token);
                         s.value = "";
                         state.sub_node = s;
                     } 
 					else 
 					{
                         // Adding to existing type field (e.g. generic List{MyType} )
-                        node::append_alloc(AstNode, &s.ftype, t);
+                        node::append_alloc(AstNode, &s.ftype, token);
                     }
                 case IDENT:
                     assert(state.sub_node);
                     if (state.scope_depth != 1) break;
-                    state.sub_node.value = t.value.tcopy();
+                    state.sub_node.value = token.value.tcopy();
 
                 case AT_IDENT:  // member level attributes
                     assert(state.sub_node);
@@ -790,7 +785,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                         case BITSTRUCT:
                             AstTypeDef* _type = (AstTypeDef*)state.sub_node;
                             ast.lexer.extend_current_attribute();
-                            node::append_alloc(AstNode, &_type.attributes, t);
+                            node::append_alloc(AstNode, &_type.attributes, token);
                         default:
                             break;
                     }
@@ -801,11 +796,11 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
                 default:
                     assert(state.sub_node);
                     AstTypeDefStructural* s = (AstTypeDefStructural*)state.sub_node;
-                    node::append_alloc(AstNode, &s.ftype, t);
+                    node::append_alloc(AstNode, &s.ftype, token);
                     break;
             }
         case FOREACH:  // parsing sub structs
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case STRUCT:
                 case UNION:
@@ -839,7 +834,7 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
             }
         case EOF:
             ast.state_stack.remove_last();
-            node_struct.iend = t.offset;
+            node_struct.iend = token.offset;
             return true;
         default:
             unreachable();
@@ -851,38 +846,38 @@ fn bool Ast.parse_structural(&ast, AstNode* node, Token* t, NodeParserState* sta
 <*
  @require node.type == TYPE_IDENT || node.type == TLOCAL
 *>
-fn bool Ast.parse_global_var(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_global_var(&ast, AstNode* node, Token* token, NodeParserState* state)
 {
     AstTypeDef* node_typedef = (AstTypeDef*)node;
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:
             node_typedef.value = "";
             nextcase STATE: state.transition(IDENT);
         case IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case TLOCAL:
                     // valid but skip to type
                     node_typedef.type = TYPE_IDENT;
                     break;
                 case IDENT:
-                    if (!node_typedef.value) node_typedef.value = t.value.tcopy();
+                    if (!node_typedef.value) node_typedef.value = token.value.tcopy();
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    node::append_alloc(AstNode, &node_typedef.attributes, t);
+                    node::append_alloc(AstNode, &node_typedef.attributes, token);
                 case EQ:
                     nextcase STATE: state.transition(EQ);
                 case EOS:
                     nextcase STATE: state.transition(EOF);
                 case TYPE_IDENT:
                 default:
-                    node::append_alloc(AstNode, &node_typedef.ftype, t);
+                    node::append_alloc(AstNode, &node_typedef.ftype, token);
                     break;
             }
         case EQ:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case EOS:
                     nextcase STATE: state.transition(EOF);
@@ -892,7 +887,7 @@ fn bool Ast.parse_global_var(&ast, AstNode* node, Token* t, NodeParserState* sta
 
         case EOF:
             ast.state_stack.remove_last();
-            node_typedef.iend = t.offset + t.value.len - 1;
+            node_typedef.iend = token.offset + token.value.len - 1;
             return true;
         default:
             break;
@@ -903,28 +898,33 @@ fn bool Ast.parse_global_var(&ast, AstNode* node, Token* t, NodeParserState* sta
 
 
 <*
- @require node.type == DEF || node.type == DISTINCT
+ @require node.type == ALIAS || node.type == TYPEDEF
 *>
-fn bool Ast.parse_typedef(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_typedef(
+	&ast, 
+	AstNode* node, 
+	Token* token, 
+	NodeParserState* state,
+)
 {
     AstTypeDef* node_typedef = (AstTypeDef*)node;
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:
             node_typedef.value = "";
             state.transition(IDENT);
         case IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case AT_TYPE_IDENT:
                 case TYPE_IDENT:
                 case IDENT:
                 case CONST_IDENT:
-                    if (!node_typedef.value) node_typedef.value = t.value.tcopy();
+                    if (!node_typedef.value) node_typedef.value = token.value.tcopy();
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    node::append_alloc(AstNode, &node_typedef.attributes, t);
+                    node::append_alloc(AstNode, &node_typedef.attributes, token);
                 case EQ:
                     nextcase STATE: state.transition(TYPE_IDENT);
                 case EOS:
@@ -933,7 +933,7 @@ fn bool Ast.parse_typedef(&ast, AstNode* node, Token* t, NodeParserState* state)
                     break;
             }
         case TYPE_IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case EQ:
                 case INLINE:
@@ -941,12 +941,12 @@ fn bool Ast.parse_typedef(&ast, AstNode* node, Token* t, NodeParserState* state)
                 case EOS:
                     nextcase STATE: state.transition(EOF);
                 default:
-                    node::append_alloc(AstNode, &node_typedef.ftype, t);
+                    node::append_alloc(AstNode, &node_typedef.ftype, token);
             }
 
         case EOF:
             ast.state_stack.remove_last();
-            node_typedef.iend = t.offset + t.value.len - 1;
+            node_typedef.iend = token.offset + token.value.len - 1;
             return true;
         default:
             break;
@@ -958,25 +958,25 @@ fn bool Ast.parse_typedef(&ast, AstNode* node, Token* t, NodeParserState* state)
 <*
  @require node.type == CONST
 *>
-fn bool Ast.parse_constants(&ast, AstNode* node, Token* t, NodeParserState* state)
+fn bool Ast.parse_constants(&ast, AstNode* node, Token* token, NodeParserState* state)
 {
     AstTypeDef* node_typedef = (AstTypeDef*)node;
 
-    switch STATE: (state.check(t)) 
+    switch STATE: (state.check(token)) 
 	{
         case INVALID_TOKEN:
             node_typedef.value = "";
             state.transition(IDENT);
         case IDENT:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case CONST_IDENT:
-                    if (!node_typedef.value) node_typedef.value = t.value.tcopy();
+                    if (!node_typedef.value) node_typedef.value = token.value.tcopy();
                 case TYPE_IDENT:
-                    node::append_alloc(AstNode, &node_typedef.ftype, t);
+                    node::append_alloc(AstNode, &node_typedef.ftype, token);
                 case AT_IDENT:
                     ast.lexer.extend_current_attribute();
-                    node::append_alloc(AstNode, &node_typedef.attributes, t);
+                    node::append_alloc(AstNode, &node_typedef.attributes, token);
                 case EQ:
                     nextcase STATE: state.transition(EOS);
                 case EOS:
@@ -985,7 +985,7 @@ fn bool Ast.parse_constants(&ast, AstNode* node, Token* t, NodeParserState* stat
                     break;
             }
         case EOS:
-            switch (t.type) 
+            switch (token.type) 
 			{
                 case EOS:
                     nextcase STATE: state.transition(EOF);
@@ -994,7 +994,7 @@ fn bool Ast.parse_constants(&ast, AstNode* node, Token* t, NodeParserState* stat
             }
         case EOF:
             ast.state_stack.remove_last();
-            node_typedef.iend = t.offset + t.value.len - 1;
+            node_typedef.iend = token.offset + token.value.len - 1;
             return true;
         default:
             break;

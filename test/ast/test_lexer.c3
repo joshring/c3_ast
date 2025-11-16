@@ -557,57 +557,58 @@ fn void test_simple_docstring_inline()
     test::eq(toks[2].type, TokenType.EOF);
 }
 
-fn void test_simple_docstring_compound_statement()
-{
-    String contents = `<*
-@require {| IntList* l = (IntList*) data; return l.allocator && l.capacity; |}
-    *>
-    `;
-    Lexer lexer;
-    lexer::init(&lexer, contents);
-    List{lexer::Token} toks = lexer.new_parse_tokens();
-    defer toks.free();
+// No equivalent in the latest code after {| |} was removed
+// fn void test_simple_docstring_compound_statement()
+// {
+//     String contents = `<*
+// @require {| IntList* l = (IntList*) data; return l.allocator && l.capacity; |}
+//     *>
+//     `;
+//     Lexer lexer;
+//     lexer::init(&lexer, contents);
+//     List{lexer::Token} toks = lexer.new_parse_tokens();
+//     defer toks.free();
 
-    // foreach(t: toks) t.print(new_line: true);
-    // foreach(i, t: toks) io::printf("%d: %s", i, t);
-    // foreach(i, t: toks) io::printf(",%s", t.type);
+//     // foreach(t: toks) t.print(new_line: true);
+//     // foreach(i, t: toks) io::printf("%d: %s", i, t);
+//     // foreach(i, t: toks) io::printf(",%s", t.type);
 
-    TokenType[] expected = {
-        DOCS_START,
-        AT_IDENT,
-        LBRAPIPE,
-        TYPE_IDENT,
-        STAR,
-        IDENT,
-        EQ,
-        LPAREN,
-        TYPE_IDENT,
-        STAR,
-        RPAREN,
-        IDENT,
-        EOS,
-        RETURN,
-        IDENT,
-        DOT,
-        IDENT,
-        AND,
-        IDENT,
-        DOT,
-        IDENT,
-        EOS,
-        RBRAPIPE,
-        DOCS_EOL,
-        DOCS_END,
-        EOF
-    };
+//     TokenType[] expected = {
+//         DOCS_START,
+//         AT_IDENT,
+//         LBRAPIPE,
+//         TYPE_IDENT,
+//         STAR,
+//         IDENT,
+//         EQ,
+//         LPAREN,
+//         TYPE_IDENT,
+//         STAR,
+//         RPAREN,
+//         IDENT,
+//         EOS,
+//         RETURN,
+//         IDENT,
+//         DOT,
+//         IDENT,
+//         AND,
+//         IDENT,
+//         DOT,
+//         IDENT,
+//         EOS,
+//         RBRAPIPE,
+//         DOCS_EOL,
+//         DOCS_END,
+//         EOF
+//     };
 
-    // module IDENT[foo] ; EOF
-    test::eq(expected.len, toks.len());
-    foreach (i, e : expected) 
-	{
-        test::@check(e == toks[i].type, "%s != %s at i:%d", e, toks[i], i);
-    }
-}
+//     // module IDENT[foo] ; EOF
+//     test::eq(expected.len, toks.len());
+//     foreach (i, e : expected) 
+// 	{
+//         test::@check(e == toks[i].type, "%s != %s at i:%d", e, toks[i], i);
+//     }
+// }
 
 fn void test_base64_bytes()
 {
